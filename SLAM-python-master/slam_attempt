@@ -1,61 +1,88 @@
+from helpers import display_world
+import seaborn as sns
+from pandas import DataFrame
+import matplotlib.pyplot as plt
 import numpy as np
-from helpers import make_data
+from helpers import make_data, display_world
 
-# your implementation of slam should work with the following inputs
-# feel free to change these input values and see how it responds!
-# define omega and xi as in the example
+###########CHANGES NEEDED####################
+'''
+So, this algorithm depends on predetermined landmarks that are randomly generated in the world. 
+Thus, modification is needed. 
+
+1) The make_landmarks function needs to change because it randomly generates in the map
+
+2) Is noise really necessary in our algorithm?
+
+3) make_data needs to be changed since it is the function that moves the robot
+and creates the data
+
+4) transform make_data into something that is gathered constantly in this file
+
+5) use a while loop from previous code to track the data and use the data in real time
+
+6) Find out how sensors can be used to find landmarks
+
+6) Graphing can be figured out while working on the while loop since it gets help from
+the display function in the helper file
+
+'''
+
+
+
+
+
 def initialize_constraints(N, num_landmarks, world_size):
     ''' This function takes in a number of time steps N, number of landmarks, and a world_size,
         and returns initialized constraint matrices, omega and xi.'''
-    
-    ## Recommended: Define and store the size (rows/cols) of the constraint matrix in a variable
+
+    # Recommended: Define and store the size (rows/cols) of the constraint matrix in a variable
     size = (N + num_landmarks)*2
     rows = size
     cols = size
 
-    ## TODO: Define the constraint matrix, Omega, with two initial "strength" values
-    ## for the initial x, y location of our robot
-    omega = np.zeros((rows,cols))
-    
+    # TODO: Define the constraint matrix, Omega, with two initial "strength" values
+    # for the initial x, y location of our robot
+    omega = np.zeros((rows, cols))
+
     strength = 1
-    
+
     mid = world_size / 2
     initial_x = mid
     initial_y = mid
-    
-    omega[0,0] = strength
-    omega[1,1] = strength
-    ## TODO: Define the constraint *vector*, xi
-    ## you can assume that the robot starts out in the middle of the world with 100% confidence
+
+    omega[0, 0] = strength
+    omega[1, 1] = strength
+    # TODO: Define the constraint *vector*, xi
+    # you can assume that the robot starts out in the middle of the world with 100% confidence
     xi = np.zeros((rows, 1))
     xi[0] = initial_x
     xi[1] = initial_y
     return omega, xi
 
+
 # world parameters
-num_landmarks      = 5        # number of landmarks
-N                  = 20       # time steps
-world_size         = 100.0    # size of world (square)
+num_landmarks = 5        # number of landmarks
+N = 20       # time steps
+world_size = 100.0    # size of world (square)
 
 # robot parameters
-measurement_range  = 50.0     # range at which we can sense landmarks
-motion_noise       = 2.0      # noise in robot motion
-measurement_noise  = 2.0      # noise in the measurements
-distance           = 20.0     # distance by which robot (intends to) move each iteratation 
+measurement_range = 50.0     # range at which we can sense landmarks
+motion_noise = 2.0      # noise in robot motion
+measurement_noise = 2.0      # noise in the measurements
+# distance by which robot (intends to) move each iteratation
+distance = 20.0
 
 
 # make_data instantiates a robot, AND generates random landmarks for a given world size and number of landmarks
-data = make_data(N, num_landmarks, world_size, measurement_range, motion_noise, measurement_noise, distance)
+data = make_data(N, num_landmarks, world_size, measurement_range,
+                 motion_noise, measurement_noise, distance)
 
 time_step = 0
 
 
 # import data viz resources
-import matplotlib.pyplot as plt
-from pandas import DataFrame
-import seaborn as sns
-%matplotlib inline
-
+# %matplotlib inline
 
 
 ## TODO: Complete the code to implement SLAM
@@ -69,25 +96,26 @@ def slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise):
     
     ## TODO: Iterate through each time step in the data
     ## get all the motion and measurement data as you iterate
+    
+    '''Using data, it describes the whole path of the robot'''
     for i in range(len(data)):
         measurements = data[i][0]
         motion = data[i][1]
-        dx = motion[0]
     
         ## TODO: update the constraint matrix/vector to account for all *measurements*
         ## this should be a series of additions that take into account the measurement noise
         nweight = 1 / measurement_noise
         for m in measurements:
-            
             landmark = m[0]
             x = m[1]
             y=  m[2]
             
             omega[2*i, 2*i] += nweight
-            omega[2*i, 2*N + 2*landmark] += -nweight
-            omega[2*N + 2*landmark, 2*i] += -nweight
+            omega[2*i, 2*N + 2*landmark] -= nweight #used to be += -nweight if it doesnt work
+            omega[2*N + 2*landmark, 2*i] -= nweight
             omega[2*N + 2*landmark, 2*N + 2*landmark] += nweight 
-                       xi[2*i, 0] += -x *nweight
+
+            xi[2*i, 0] -= x *nweight
             xi[2*N + 2*landmark, 0] += x *nweight
             
             omega[2*i + 1, 2*i + 1] += nweight
@@ -97,36 +125,39 @@ def slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise):
             xi[2*i + 1, 0] += -y *nweight
             xi[2*N + 2*landmark + 1, 0] += y *nweight  
             
-        ## TODO: update the constraint matrix/vector to account for all *motion* and motion noise       
-            dx = motion[0]             
-            dy = motion[1]
-            mweight = 1 / motion_noise
-        
-            omega[2*i, 2*i] +=  mweight
-            omega[2*i, 2*i + 2] += - mweight
-            omega[2*i + 2, 2*i] += - mweight
-            omega[2*i + 2, 2*i + 2] += mweight
-            
-            xi[2*i, 0] += -dx  * mweight             
-            xi[2*i + 2, 0] += dx * mweight   
-            
+     ## TODO: update the constraint matrix/vector to account for all *motion* and motion noise       
+        dx = motion[0]             
+        dy = motion[1]
+        mweight = 1 / motion_noise
     
-            omega[2*i + 1, 2*i + 1] += mweight
-            omega[2*i + 1, 2*i + 3] += - mweight
-            omega[2*i + 3, 2*i + 1] += - mweight
-            omega[2*i + 3, 2*i + 3] += mweight 
-
-            xi[2*i + 1, 0] += -dy * mweight
-            xi[2*i + 3, 0] += dy * mweight
+        omega[2*i, 2*i] +=  mweight
+        omega[2*i, 2*i + 2] += - mweight
+        omega[2*i + 2, 2*i] += - mweight
+        omega[2*i + 2, 2*i + 2] += mweight
         
-        ## TODO: After iterating through all the data
-        ## Compute the best estimate of poses and landmark positions
-        ## using the formula, omega_inverse * Xi
-        mu = np.linalg.inv(np.matrix(omega)) * xi
-        return mu # return `mu`
+        xi[2*i, 0] += -dx  * mweight             
+        xi[2*i + 2, 0] += dx * mweight   
+        
+  
+        omega[2*i + 1, 2*i + 1] += mweight
+        omega[2*i + 1, 2*i + 3] += - mweight
+        omega[2*i + 3, 2*i + 1] += - mweight
+        omega[2*i + 3, 2*i + 3] += mweight 
+        
+        xi[2*i + 1, 0] += -dy * mweight
+        xi[2*i + 3, 0] += dy * mweight
+        
+    ## TODO: After iterating through all the data
+    ## Compute the best estimate of poses and landmark positions
+    ## using the formula, omega_inverse * Xi
+    mu = np.linalg.inv(np.matrix(omega)) * xi
+    return mu # return `mu`
+
 
 # a helper function that creates a list of poses and of landmarks for ease of printing
 # this only works for the suggested constraint architecture of interlaced x,y poses
+
+
 def get_poses_landmarks(mu, N):
     # create a list of poses
     poses = []
@@ -141,15 +172,17 @@ def get_poses_landmarks(mu, N):
     # return completed lists
     return poses, landmarks
 
+
 def print_all(poses, landmarks):
     print('\n')
     print('Estimated Poses:')
     for i in range(len(poses)):
-        print('['+', '.join('%.3f'%p for p in poses[i])+']')
+        print('['+', '.join('%.3f' % p for p in poses[i])+']')
     print('\n')
     print('Estimated Landmarks:')
     for i in range(len(landmarks)):
-        print('['+', '.join('%.3f'%l for l in landmarks[i])+']')
+        print('['+', '.join('%.3f' % l for l in landmarks[i])+']')
+
 
 # call your implementation of slam, passing in the necessary parameters
 mu = slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise)
@@ -162,12 +195,11 @@ if(mu is not None):
     print_all(poses, landmarks)
 
 # import the helper function
-from helpers import display_world
 
 # Display the final world!
 
 # define figure size
-plt.rcParams["figure.figsize"] = (20,20)
+plt.rcParams["figure.figsize"] = (20, 20)
 
 # check if poses has been created
 if 'poses' in locals():
@@ -175,3 +207,6 @@ if 'poses' in locals():
     print('Last pose: ', poses[-1])
     # display the last position of the robot *and* the landmark positions
     display_world(int(world_size), poses[-1], landmarks)
+
+
+

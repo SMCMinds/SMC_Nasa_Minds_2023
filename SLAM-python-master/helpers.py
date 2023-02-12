@@ -51,7 +51,14 @@ def display_world(world_size, position, landmarks=None):
 # this routine makes the robot data
 # the data is a list of measurements and movements: [measurements, [dx, dy]]
 # collected over a specified number of time steps, N
-#
+
+#######Changes##########
+'''We need to make sure to change this. It continually iterates until
+all of the landmarks are detected. This is not good for us since we 
+have to create landmarks as we go. Also it seems like the goal of the 
+rover is to detect all the landmarks.'''
+#########################
+
 def make_data(N, num_landmarks, world_size, measurement_range, motion_noise, 
               measurement_noise, distance):
 
@@ -67,6 +74,7 @@ def make_data(N, num_landmarks, world_size, measurement_range, motion_noise,
     r = robot(world_size, measurement_range, motion_noise, measurement_noise)
     r.make_landmarks(num_landmarks)
 
+    # runs until all of the landmarks are detected 
     while not complete:
 
         data = []
@@ -87,7 +95,7 @@ def make_data(N, num_landmarks, world_size, measurement_range, motion_noise,
             for i in range(len(Z)):
                 seen[Z[i][0]] = True
     
-            # move
+            # checks if movement goes out of the graph and moves in a direction
             while not r.move(dx, dy):
                 # if we'd be leaving the robot world, pick instead a new direction
                 orientation = random.random() * 2.0 * pi

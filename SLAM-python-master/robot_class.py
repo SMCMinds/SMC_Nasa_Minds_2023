@@ -47,6 +47,7 @@ class robot:
     #
     def move(self, dx, dy):
         
+        #Makes its own errors in movement through the noise
         x = self.x + dx + self.rand() * self.motion_noise
         y = self.y + dy + self.rand() * self.motion_noise
         
@@ -67,14 +68,11 @@ class robot:
     
     ## TODO: paste your complete the sense function, here
     ## make sure the indentation of the code is correct
+    
+    ##
     def sense(self):
-        ''' This function does not take in any parameters, instead it references internal variables
-            (such as self.landamrks) to measure the distance between the robot and any landmarks
-            that the robot can see (that are within its measurement range).
-            This function returns a list of landmark indices, and the measured distances (dx, dy)
-            between the robot's position and said landmarks.
-            This function should account for measurement_noise and measurement_range.
-            One item in the returned list should be in the form: [landmark_index, dx, dy].
+        ''' This function list the distances of the landmarks within the
+        the sensing radius(measurement_range)
             '''
            
         measurements = []
@@ -82,25 +80,18 @@ class robot:
         ## TODO: iterate through all of the landmarks in a world
         
         ## TODO: For each landmark
-        ## 1. compute dx and dy, the distances between the robot and the landmark
-        ## 2. account for measurement noise by *adding* a noise component to dx and dy
-        ##    - The noise component should be a random value between [-1.0, 1.0)*measurement_noise
-        ##    - Feel free to use the function self.rand() to help calculate this noise component
-        ## 3. If either of the distances, dx or dy, fall outside of the internal var, measurement_range
-        ##    then we cannot record them; if they do fall in the range, then add them to the measurements list
-        ##    as list.append([index, dx, dy]), this format is important for data creation done later
-        
+
         for index in range(self.num_landmarks):
-            # dx and dy compute
-            dx = self.landmarks[index][0] - self.x
-            dy = self.landmarks[index][1] - self.y
+            # distance between landmark and rover
+            dist_x = self.landmarks[index][0] - self.x
+            dist_y = self.landmarks[index][1] - self.y
             # add noise
             noise = self.rand() * self.measurement_noise
-            dx += noise
-            dy += noise
-            #check if dx and dy are out of range
-            if(abs(dx) < self.measurement_range and abs(dy) < self.measurement_range):
-                measurements.append([index, dx, dy])
+            dist_x += noise
+            dist_y += noise
+            #check if landmark is in range
+            if(abs(dist_x) < self.measurement_range and abs(dist_y) < self.measurement_range):
+                measurements.append([index, dist_x, dist_y])
         ## TODO: return the final, complete list of measurements
         return measurements
 
