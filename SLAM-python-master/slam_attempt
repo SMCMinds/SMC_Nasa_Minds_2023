@@ -1,4 +1,6 @@
-from helpers import display_world
+from robot_class import robot
+from math import *
+from matplotlib import animation
 import seaborn as sns
 from pandas import DataFrame
 import matplotlib.pyplot as plt
@@ -9,6 +11,8 @@ from helpers import make_data, display_world
 '''
 So, this algorithm depends on predetermined landmarks that are randomly generated in the world. 
 Thus, modification is needed. 
+
+Curr: modify code so it does not rely on  N and make the animation functional
 
 1) The make_landmarks function needs to change because it randomly generates in the map
 
@@ -26,18 +30,19 @@ and creates the data
 6) Graphing can be figured out while working on the while loop since it gets help from
 the display function in the helper file
 
+7) Replace the get_pose_landmark which changes the numpy array to python array
+
 '''
-
-
-
 
 
 def initialize_constraints(N, num_landmarks, world_size):
     ''' This function takes in a number of time steps N, number of landmarks, and a world_size,
         and returns initialized constraint matrices, omega and xi.'''
 
-    # Recommended: Define and store the size (rows/cols) of the constraint matrix in a variable
+    ###########CHANGE###############
+    #size dependent on predetermined number of landmarks
     size = (N + num_landmarks)*2
+    ################################
     rows = size
     cols = size
 
@@ -62,7 +67,8 @@ def initialize_constraints(N, num_landmarks, world_size):
 
 
 # world parameters
-num_landmarks = 5        # number of landmarks
+landmarks = []
+num_landmarks = 6
 N = 20       # time steps
 world_size = 100.0    # size of world (square)
 
@@ -73,22 +79,22 @@ measurement_noise = 2.0      # noise in the measurements
 # distance by which robot (intends to) move each iteratation
 distance = 20.0
 
+#Initiate robot class
+r = robot(world_size, measurement_range)
 
 # make_data instantiates a robot, AND generates random landmarks for a given world size and number of landmarks
-data = make_data(N, num_landmarks, world_size, measurement_range,
+##Got rid of N, so just make sure to loop it correctly
+data = make_data(r, landmarks,world_size, measurement_range,
                  motion_noise, measurement_noise, distance)
 
 time_step = 0
 
-
-# import data viz resources
-# %matplotlib inline
-
-
-## TODO: Complete the code to implement SLAM
-
-## slam takes in 6 arguments and returns mu, 
 ## mu is the entire path traversed by a robot (all x,y poses) *and* all landmarks locations
+## since xi is motion with error and omega is obstacle detection error
+## xi = mu*omega
+##  mu is the probable true path through noise calculation
+'''Seems to overcomplicate a little? But I'll stick with it since it seems like 
+something to try''' 
 def slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise):
     
     ## TODO: Use your initilization to create constraint matrices, omega and xi
@@ -97,7 +103,8 @@ def slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise):
     ## TODO: Iterate through each time step in the data
     ## get all the motion and measurement data as you iterate
     
-    '''Using data, it describes the whole path of the robot'''
+    '''Adds the uncertainty in the collection of data in the robot's position
+    and the landmarks'''
     for i in range(len(data)):
         measurements = data[i][0]
         motion = data[i][1]
@@ -147,6 +154,7 @@ def slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise):
         xi[2*i + 1, 0] += -dy * mweight
         xi[2*i + 3, 0] += dy * mweight
         
+        
     ## TODO: After iterating through all the data
     ## Compute the best estimate of poses and landmark positions
     ## using the formula, omega_inverse * Xi
@@ -157,8 +165,8 @@ def slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise):
 # a helper function that creates a list of poses and of landmarks for ease of printing
 # this only works for the suggested constraint architecture of interlaced x,y poses
 
-
-def get_poses_landmarks(mu, N):
+#converts numpy array into python array
+'''def get_poses_landmarks(mu, N):
     # create a list of poses
     poses = []
     for i in range(N):
@@ -171,13 +179,34 @@ def get_poses_landmarks(mu, N):
 
     # return completed lists
     return poses, landmarks
-
-
+    
+    #prints all the coordinates that the robot makes
 def print_all(poses, landmarks):
     print('\n')
     print('Estimated Poses:')
     for i in range(len(poses)):
         print('['+', '.join('%.3f' % p for p in poses[i])+']')
+    print('\n')
+    print('Estimated Landmarks:')
+    for i in range(len(landmarks)):
+        print('['+', '.join('%.3f' % l for l in landmarks[i])+']')
+    
+    '''
+
+#converts numpy value into python value
+def get_pose_landmark(mu, i , np_landmarks):
+    # create a list of poses
+    landmarks = []
+    for j in range(len(np_landmarks)):
+        landmarks.append((mu[2*(i+j)].item(), mu[2*(i+j)+1].item()))
+    # return pose, landmark array
+    return (mu[2*i].item(), mu[2*i+1].item()), landmarks
+
+#prints all the coordinates that the robot makes
+def print_all(poses, landmarks):
+    print('\n')
+    print('Estimated Poses:')
+    print('['+', '.join(poses)+']')
     print('\n')
     print('Estimated Landmarks:')
     for i in range(len(landmarks)):
@@ -188,25 +217,97 @@ def print_all(poses, landmarks):
 mu = slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise)
 
 # print out the resulting landmarks and poses
-if(mu is not None):
+'''if(mu is not None):
     # get the lists of poses and landmarks
     # and print them out
-    poses, landmarks = get_poses_landmarks(mu, N)
-    print_all(poses, landmarks)
+    poses, landmarks = get_pose_landmark(mu)
+    print_all(poses, landmarks)'''
 
 # import the helper function
 
 # Display the final world!
 
 # define figure size
+# it determines the size of the window that opens
 plt.rcParams["figure.figsize"] = (20, 20)
 
-# check if poses has been created
+
+# Old print function
+'''# check if poses has been created
+#local() returns a dictionary of every variable in the scope of the file
 if 'poses' in locals():
     # print out the last pose
     print('Last pose: ', poses[-1])
     # display the last position of the robot *and* the landmark positions
-    display_world(int(world_size), poses[-1], landmarks)
+    display_world(int(world_size), poses[-1], landmarks)'''
 
 
 
+
+def animate(frame_number):
+    global ax  # need it to remove old plot
+
+    # print('frame_number:', frame_number)
+    
+    # get latest pose and all landmarks
+    pose, landmarks = get_pose_landmark(mu, frame_number, r.landmarks)
+
+    
+    # Create an 'o' character that represents the robot
+    # ha = horizontal alignment, va = vertical
+    ax.text(pose[frame_number][0], pose[frame_number][1], 'o', ha='center', va='center', color='r', fontsize=30)
+    
+    # Draw landmarks if they exists
+    if(landmarks is not None):
+        # loop through all path indices and draw a dot (unless it's at the car's location)
+        for pos in landmarks:
+            if(pos != pose[frame_number]):
+                ax.text(pos[0], pos[1], 'x', ha='center', va='center', color='purple', fontsize=20)
+    
+    # Display final result
+    plt.show()
+
+    # move all particles
+    r.move()
+
+    # after for-loop
+
+    # remove old plot
+    #d.set_data([], [])
+    ax.remove()
+
+    # create new plot
+    # d, = plt.plot([particle.x for particle in pop], [
+    #               particle.y for particle in pop], 'go')
+
+# --- main ---
+fig = plt.gcf()
+
+# using seaborn, set background grid to gray
+sns.set_style("dark")
+
+# Plot grid of values
+world_grid = np.zeros((world_size+1, world_size+1))
+
+# Set minor axes in between the labels
+#gca, gets current axis
+ax=plt.gca()
+cols = world_size+1
+rows = world_size+1
+
+ax.set_xticks([x for x in range(1,cols)],minor=True )
+ax.set_yticks([y for y in range(1,rows)],minor=True)
+
+# Plot grid on minor axes in gray (width = 1)
+plt.grid(which='minor',ls='-',lw=1, color='white')
+
+# Plot grid on major axes in larger width
+plt.grid(which='major',ls='-',lw=2, color='white')
+
+# fig = plt.gcf()
+# draw first plot
+# d,  = plt.plot([particle.x for particle in pop], [
+#                particle.y for particle in pop], 'go')
+anim = animation.FuncAnimation(fig, animate, frames=200, interval=45, repeat=False)
+
+plt.show()
