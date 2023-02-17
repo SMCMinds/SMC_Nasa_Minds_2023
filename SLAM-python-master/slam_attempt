@@ -72,6 +72,13 @@ num_landmarks = 6
 N = 20       # time steps
 world_size = 100.0    # size of world (square)
 
+# make_landmarks:
+# # make random landmarks located in the world
+def make_landmarks(num_landmarks):
+    for i in range(num_landmarks):
+        landmarks.append([round(random.random() * self.world_size),round(random.random() * self.world_size)])
+    return landmarks
+
 # robot parameters
 measurement_range = 50.0     # range at which we can sense landmarks
 motion_noise = 2.0      # noise in robot motion
@@ -80,7 +87,7 @@ measurement_noise = 2.0      # noise in the measurements
 distance = 20.0
 
 #Initiate robot class
-r = robot(world_size, measurement_range)
+r = robot(world_size, measurement_range, landmarks)
 
 # make_data instantiates a robot, AND generates random landmarks for a given world size and number of landmarks
 ##Got rid of N, so just make sure to loop it correctly
@@ -213,15 +220,11 @@ def print_all(poses, landmarks):
         print('['+', '.join('%.3f' % l for l in landmarks[i])+']')
 
 
+pose, landmarks = get_pose_landmark(mu, frame_number, r.landmarks)
+
 # call your implementation of slam, passing in the necessary parameters
 mu = slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise)
 
-# print out the resulting landmarks and poses
-'''if(mu is not None):
-    # get the lists of poses and landmarks
-    # and print them out
-    poses, landmarks = get_pose_landmark(mu)
-    print_all(poses, landmarks)'''
 
 # import the helper function
 
@@ -232,25 +235,16 @@ mu = slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise)
 plt.rcParams["figure.figsize"] = (20, 20)
 
 
-# Old print function
-'''# check if poses has been created
-#local() returns a dictionary of every variable in the scope of the file
-if 'poses' in locals():
-    # print out the last pose
-    print('Last pose: ', poses[-1])
-    # display the last position of the robot *and* the landmark positions
-    display_world(int(world_size), poses[-1], landmarks)'''
 
-
-
-
+#Do I even need to animate the graph?
+'''
 def animate(frame_number):
     global ax  # need it to remove old plot
 
     # print('frame_number:', frame_number)
     
     # get latest pose and all landmarks
-    pose, landmarks = get_pose_landmark(mu, frame_number, r.landmarks)
+    
 
     
     # Create an 'o' character that represents the robot
@@ -274,14 +268,15 @@ def animate(frame_number):
 
     # remove old plot
     #d.set_data([], [])
-    ax.remove()
+    fig.remove()
 
     # create new plot
     # d, = plt.plot([particle.x for particle in pop], [
     #               particle.y for particle in pop], 'go')
+    '''
 
 # --- main ---
-fig = plt.gcf()
+fig = plt.figure(1)
 
 # using seaborn, set background grid to gray
 sns.set_style("dark")
@@ -308,6 +303,6 @@ plt.grid(which='major',ls='-',lw=2, color='white')
 # draw first plot
 # d,  = plt.plot([particle.x for particle in pop], [
 #                particle.y for particle in pop], 'go')
-anim = animation.FuncAnimation(fig, animate, frames=200, interval=45, repeat=False)
+# anim = animation.FuncAnimation(fig, animate, frames=200, interval=45, repeat=False)
 
 plt.show()

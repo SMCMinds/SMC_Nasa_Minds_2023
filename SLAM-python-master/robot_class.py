@@ -23,13 +23,14 @@ class robot:
     #   creates a robot with the specified parameters and initializes
     #   the location (self.x, self.y) to the center of the world
     #
-    def __init__(self, world_size=100.0, measurement_range=30.0):
+    def __init__(self, world_size=100.0, measurement_range=30.0,world_landmarks): #world_landmarks only for this simulation
         self.world_size = world_size
         self.measurement_range = measurement_range
         self.x = world_size / 2.0
         self.y = world_size / 2.0
-        self.landmarks = []
+        self.landmarks = [] #landmarks[x][y] seen by rover
         self.distance = 20.0 #The size of the step that the robot takes
+        self.record_movement = [self.x, self.y, orientation] #record_movement[x,y,orientation]
 
     # returns a positive, random float
 
@@ -40,18 +41,16 @@ class robot:
     # move: attempts to move robot by dx, dy. If outside world
     #       boundary, then the move does nothing and instead returns failure
 
-    def move(self, dx, dy):
-
-        x = self.x + dx
-        y = self.y + dy
-
+    def move(self):
         while x < 0.0 or x > self.world_size or y < 0.0 or y > self.world_size:
             orientation = random.random() * 2.0 * pi
             dx = cos(orientation) * self.distance
             dy = sin(orientation) * self.distance
-        
-        self.x = x
-        self.y = y
+
+
+        self.x = self.x + dx
+        self.y =  self.y + dy
+        self.record_movement.append(self.x,self.y,orientation)
 
 
 
@@ -87,23 +86,37 @@ class robot:
         return measurements
 
     # --------
-    # make_landmarks:
-    # make random landmarks located in the world
-    '''def make_landmarks(self, num_landmarks):
-        self.landmarks = []
-        for i in range(num_landmarks):
-            self.landmarks.append([round(random.random() * self.world_size),
-                                   round(random.random() * self.world_size)])
-        self.num_landmarks = num_landmarks'''
 
-    # make_landmarks:
+
     ###############CHANGE#############
+    #Places the landmark in front of the robot
     def detect_landmarks(self):
-    # use sensor to determine place of obstacle and create the landmark
-        self.landmarks
-        # planned: appends a list of the placement of landmarks and records them
+        obstacles = simulate_sensor()
+        for i in range(len(obstacles)) 
+        if obstacles[i] < self.measurement_range: #Left off here
+            obstacle_x = self.x * cos(orientation)
+            obstacle_y = self.y * sin(orientation)
+            self.landmarks.append[obstacle_x, obstacle_y]
+
     
     ##############CHANGE###############
+    
+    
+    
+    ##########ONLY FOR SIMULATION#############
+    def simulate_sensor():
+        measurements = []
+        
+        # TODO: iterate through all of the landmarks in a world
+        for index in range(len(self.world_landmarks)):
+            # distance between landmark and rover
+            dist_x = self.world_landmarks[index][0] - self.x
+            dist_y = self.world_andmarks[index][1] - self.y
+            # check if landmark is in range
+            if(abs(dist_x) < self.measurement_range and abs(dist_y) < self.measurement_range):
+                measurements.append([index, dist_x, dist_y])
+        # TODO: return the final, complete list of measurements
+        return measurements
         
 
     # called when print(robot) is called; prints the robot's location
