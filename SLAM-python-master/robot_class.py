@@ -1,5 +1,6 @@
 from math import *
 import random
+import keyboard
 
 
 ### ------------------------------------- ###
@@ -23,14 +24,16 @@ class robot:
     #   creates a robot with the specified parameters and initializes
     #   the location (self.x, self.y) to the center of the world
     #
-    def __init__(self, world_size=100.0, measurement_range=30.0,world_landmarks): #world_landmarks only for this simulation
+    def __init__(self, world_size=100.0, measurement_range=30.0, world_landmarks = 0): #world_landmarks only for this simulation
         self.world_size = world_size
         self.measurement_range = measurement_range
-        self.x = world_size / 2.0
-        self.y = world_size / 2.0
+        self.x = world_size * random.random()
+        self.y = world_size * random.random()
         self.landmarks = [] #landmarks[x][y] seen by rover
-        self.distance = 20.0 #The size of the step that the robot takes
-        self.record_movement = [self.x, self.y, orientation] #record_movement[x,y,orientation]
+        self.world_landmarks = world_landmarks
+        self.distance = 1.0 #The size of the step that the robot takes
+        self.orientation = 0
+        self.record_movement = [[self.x, self.y, self.orientation]] #record_movement[x,y,orientation]
 
     # returns a positive, random float
 
@@ -42,16 +45,35 @@ class robot:
     #       boundary, then the move does nothing and instead returns failure
 
     def move(self):
-        while x < 0.0 or x > self.world_size or y < 0.0 or y > self.world_size:
-            orientation = random.random() * 2.0 * pi
+        random.seed()
+        orientation = self.orientation + random.uniform(-2,2)/5
+        dx = cos(orientation) * self.distance
+        dy = sin(orientation) * self.distance
+        x = self.x + dx
+        y = self.y + dy
+        while self.check_if_collide(x,y) or x < 0.0 or x > self.world_size or y < 0.0 or y > self.world_size:
+            #### In any collision, the robot will automatically turn left
+            orientation = orientation + 0.05 
             dx = cos(orientation) * self.distance
             dy = sin(orientation) * self.distance
+            x = self.x + dx
+            y = self.y + dy
+        self.x = x
+        self.y =  y
+        self.orientation = orientation
+        self.record_movement.append([self.x,self.y, self.orientation])
 
-
-        self.x = self.x + dx
-        self.y =  self.y + dy
-        self.record_movement.append(self.x,self.y,orientation)
-
+    def check_if_collide(self, x, y):
+        for index in range(len(self.landmarks)):
+            
+            # dist_x = self.landmarks[index][0] - self.x
+            # dist_y = self.landmarks[index][1] - self.y
+            dist_new_x = self.landmarks[index][0] - x
+            dist_new_y = self.landmarks[index][1] - y
+            # check the robot crosses the landmark position
+            if((abs(dist_new_y) < self.measurement_range) and (abs(dist_new_x) < self.measurement_range)):
+                return True
+        return False
 
 
     # --------
@@ -60,64 +82,43 @@ class robot:
     #        is of variable length. Set measurement_range to -1 if you want all
     #        landmarks to be visible at all times
     #
+
     
-    # TODO: paste your complete the sense function, here
-    # make sure the indentation of the code is correct
-    
-    ##
-    def sense(self):
-        ''' This function list the distances of the landmarks within the
-        the sensing radius(measurement_range). It is good since it 
-        keeps a list of measurements of distance from each landmark during every
-        run time
-            '''
-           
-        measurements = []
-        
-        # TODO: iterate through all of the landmarks in a world
-        for index in range(len(self.landmarks)):
-            # distance between landmark and rover
-            dist_x = self.landmarks[index][0] - self.x
-            dist_y = self.landmarks[index][1] - self.y
-            # check if landmark is in range
-            if(abs(dist_x) < self.measurement_range and abs(dist_y) < self.measurement_range):
-                measurements.append([index, dist_x, dist_y])
-        # TODO: return the final, complete list of measurements
-        return measurements
-
-    # --------
-
-
     ###############CHANGE#############
     #Places the landmark in front of the robot
     def detect_landmarks(self):
-        obstacles = simulate_sensor()
-        for i in range(len(obstacles)) 
-        if obstacles[i] < self.measurement_range: #Left off here
-            obstacle_x = self.x * cos(orientation)
-            obstacle_y = self.y * sin(orientation)
-            self.landmarks.append[obstacle_x, obstacle_y]
-
-    
+        orientation = random.random() * 2.0 * pi
+        obstacles = self.simulate_sense()
+        for i in range(len(obstacles)): 
+            if obstacles[i][0] < self.measurement_range or obstacles[i][1] < self.measurement_range: #Left off here
+                # obstacle_x = self.x * cos(orientation)
+                # obstacle_y = self.y * sin(orientation)
+                self.landmarks.append([self.x + obstacles[i][0], self.y + obstacles[i][1]])
+            
     ##############CHANGE###############
     
     
-    
     ##########ONLY FOR SIMULATION#############
-    def simulate_sensor():
+    def simulate_sense(self):
         measurements = []
-        
         # TODO: iterate through all of the landmarks in a world
         for index in range(len(self.world_landmarks)):
             # distance between landmark and rover
             dist_x = self.world_landmarks[index][0] - self.x
-            dist_y = self.world_andmarks[index][1] - self.y
+            dist_y = self.world_landmarks[index][1] - self.y
             # check if landmark is in range
             if(abs(dist_x) < self.measurement_range and abs(dist_y) < self.measurement_range):
-                measurements.append([index, dist_x, dist_y])
+                measurements.append([dist_x, dist_y])
         # TODO: return the final, complete list of measurements
         return measurements
         
+    def if_continue_move():
+        if keyboard.is_pressed('escape'):
+            return False
+        else:
+            return True
+
+
 
     # called when print(robot) is called; prints the robot's location
     def __repr__(self):

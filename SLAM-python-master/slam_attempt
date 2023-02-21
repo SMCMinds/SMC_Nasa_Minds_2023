@@ -1,6 +1,7 @@
 from robot_class import robot
 from math import *
 from matplotlib import animation
+import random
 import seaborn as sns
 from pandas import DataFrame
 import matplotlib.pyplot as plt
@@ -75,8 +76,16 @@ world_size = 100.0    # size of world (square)
 # make_landmarks:
 # # make random landmarks located in the world
 def make_landmarks(num_landmarks):
-    for i in range(num_landmarks):
-        landmarks.append([round(random.random() * self.world_size),round(random.random() * self.world_size)])
+    #for random obstacles
+    # for i in range(num_landmarks):
+    #     landmarks.append([round(random.random() * world_size),round(random.random() * world_size)])
+    
+    #for a wall
+    for i in range(world_size/5):
+        horizontal_coor = round(random.random() * world_size)
+        landmarks.append([horizontal_coor, i])
+    
+    
     return landmarks
 
 # robot parameters
@@ -87,6 +96,7 @@ measurement_noise = 2.0      # noise in the measurements
 distance = 20.0
 
 #Initiate robot class
+landmarks = make_landmarks(num_landmarks)
 r = robot(world_size, measurement_range, landmarks)
 
 # make_data instantiates a robot, AND generates random landmarks for a given world size and number of landmarks
@@ -220,11 +230,11 @@ def print_all(poses, landmarks):
         print('['+', '.join('%.3f' % l for l in landmarks[i])+']')
 
 
-pose, landmarks = get_pose_landmark(mu, frame_number, r.landmarks)
 
 # call your implementation of slam, passing in the necessary parameters
 mu = slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise)
 
+pose, landmarks = get_pose_landmark(mu, frame_number, r.landmarks)
 
 # import the helper function
 
@@ -233,7 +243,6 @@ mu = slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise)
 # define figure size
 # it determines the size of the window that opens
 plt.rcParams["figure.figsize"] = (20, 20)
-
 
 
 #Do I even need to animate the graph?
@@ -274,6 +283,7 @@ def animate(frame_number):
     # d, = plt.plot([particle.x for particle in pop], [
     #               particle.y for particle in pop], 'go')
     '''
+
 
 # --- main ---
 fig = plt.figure(1)
