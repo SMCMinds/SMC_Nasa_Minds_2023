@@ -55,12 +55,14 @@ def make_landmarks(num_landmarks):
     horizontal_coor = 60
     for i in range(round(world_size/5)):
         landmarks.append([horizontal_coor, i*5])
+        
+    #You can import a maze if you want make it more complex
     
     
     return landmarks
 
 # robot parameters
-measurement_range = 4.0     # range at which we can sense landmarks
+measurement_range = 5.0     # range at which we can sense landmarks
 # distance by which robot (intends to) move each iteratation
 distance = 1.0
 
@@ -99,91 +101,24 @@ while i < time_steps:
 fig = plt.figure()
 fig, ax = plt.subplots()
 
+
+#get graph color
+def get_cmap(n, name='hsv'):
+    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
+    RGB color; the keyword argument name must be a standard mpl colormap name.'''
+    return plt.cm.get_cmap(name, n)
+
+# rect = plt.Rectangle((i, -0.5), 1, 1, facecolor=cmap(i))
+
 # draw the plot
 for i in range(len(robot_list)):
+    #randomize color
+    cmap = get_cmap(random.randint(0,30))
     ax.plot([particle[0] for particle in robot_list[i].record_movement], [
-                particle[1] for particle in robot_list[i].record_movement], 'go', linestyle="--")
+                particle[1] for particle in robot_list[i].record_movement], color = cmap(i), marker = '.', linestyle="--")
     ax.plot([particle[0] for particle in robot_list[i].landmarks], [
-                particle[1] for particle in robot_list[i].landmarks], marker = '*', linestyle="-")
+                particle[1] for particle in robot_list[i].landmarks], color = 'black', marker = '*', linestyle="-")
 
 
 plt.show()
 
-# Display the final world!
-
-# define figure size
-# it determines the size of the window that opens
-plt.rcParams["figure.figsize"] = (20, 20)
-
-
-#Do I even need to animate the graph?
-'''
-def animate(frame_number):
-    global ax  # need it to remove old plot
-
-    # print('frame_number:', frame_number)
-    
-    # get latest pose and all landmarks
-    
-
-    
-    # Create an 'o' character that represents the robot
-    # ha = horizontal alignment, va = vertical
-    ax.text(pose[frame_number][0], pose[frame_number][1], 'o', ha='center', va='center', color='r', fontsize=30)
-    
-    # Draw landmarks if they exists
-    if(landmarks is not None):
-        # loop through all path indices and draw a dot (unless it's at the car's location)
-        for pos in landmarks:
-            if(pos != pose[frame_number]):
-                ax.text(pos[0], pos[1], 'x', ha='center', va='center', color='purple', fontsize=20)
-    
-    # Display final result
-    plt.show()
-
-    # move all particles
-    r.move()
-
-    # after for-loop
-
-    # remove old plot
-    #d.set_data([], [])
-    fig.remove()
-
-    # create new plot
-    # d, = plt.plot([particle.x for particle in pop], [
-    #               particle.y for particle in pop], 'go')
-    '''
-
-'''
-# --- main ---
-fig = plt.figure(1)
-
-# using seaborn, set background grid to gray
-sns.set_style("dark")
-
-# Plot grid of values
-world_grid = np.zeros((world_size+1, world_size+1))
-
-# Set minor axes in between the labels
-#gca, gets current axis
-ax=plt.gca()
-cols = world_size+1
-rows = world_size+1
-
-ax.set_xticks([x for x in range(1,cols)],minor=True )
-ax.set_yticks([y for y in range(1,rows)],minor=True)
-
-# Plot grid on minor axes in gray (width = 1)
-plt.grid(which='minor',ls='-',lw=1, color='white')
-
-# Plot grid on major axes in larger width
-plt.grid(which='major',ls='-',lw=2, color='white')
-
-# fig = plt.gcf()
-# draw first plot
-# d,  = plt.plot([particle.x for particle in pop], [
-#                particle.y for particle in pop], 'go')
-# anim = animation.FuncAnimation(fig, animate, frames=200, interval=45, repeat=False)
-
-plt.show()'''

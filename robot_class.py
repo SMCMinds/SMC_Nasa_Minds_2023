@@ -46,18 +46,29 @@ class robot:
 
     def move(self):
         random.seed()
+        #initialize
         orientation = self.orientation + random.uniform(-2,2)/5
         dx = cos(orientation) * self.distance
         dy = sin(orientation) * self.distance
         x = self.x + dx
         y = self.y + dy
+        anti_loop_counter = 0
+        
+        #check if new coordinate goes out of bounds or hits a landmark
         while self.check_if_collide(x,y) or x < 0.0 or x > self.world_size or y < 0.0 or y > self.world_size:
             #### In any collision, the robot will automatically turn left
             orientation = orientation + 0.05 
             dx = cos(orientation) * self.distance
             dy = sin(orientation) * self.distance
+            if anti_loop_counter >= 10:
+                dx *=2
+                dx *=2
             x = self.x + dx
             y = self.y + dy
+                
+            anti_loop_counter+=1
+        
+        #assignment
         self.x = x
         self.y =  y
         self.orientation = orientation
@@ -71,7 +82,7 @@ class robot:
             dist_new_x = self.landmarks[index][0] - x
             dist_new_y = self.landmarks[index][1] - y
             # check the robot crosses the landmark position
-            if((abs(dist_new_y) < self.measurement_range) and (abs(dist_new_x) < self.measurement_range)):
+            if((abs(dist_new_y) < self.measurement_range/2) and (abs(dist_new_x) < self.measurement_range/2)):
                 return True
         return False
 
