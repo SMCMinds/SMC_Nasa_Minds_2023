@@ -1,40 +1,10 @@
 from robot_class import robot
 from math import *
-from matplotlib import animation
 import random
-import seaborn as sns
-from pandas import DataFrame
 import matplotlib.pyplot as plt
 import numpy as np
 import keyboard
 import time
-
-###########CHANGES NEEDED####################
-'''
-So, this algorithm depends on predetermined landmarks that are randomly generated in the world. 
-Thus, modification is needed. 
-
-Curr: modify code so it does not rely on  N and make the animation functional
-
-1) The make_landmarks function needs to change because it randomly generates in the map
-
-
-3) make_data needs to be changed since it is the function that moves the robot
-and creates the data
-
-4) transform make_data into something that is gathered constantly in this file
-
-5) use a while loop from previous code to track the data and use the data in real time
-
-6) Find out how sensors can be used to find landmarks
-
-6) Graphing can be figured out while working on the while loop since it gets help from
-the display function in the helper file
-
-7) Replace the get_pose_landmark which changes the numpy array to python array
-
-'''
-
 
 
 # world parameters
