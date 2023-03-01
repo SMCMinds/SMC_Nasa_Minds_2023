@@ -3,7 +3,7 @@ from math import *
 import random
 import matplotlib.pyplot as plt
 import numpy as np
-import keyboard
+
 import time
 
 

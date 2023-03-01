@@ -1,6 +1,6 @@
 from math import *
 import random
-import keyboard
+
 
 
 ### ------------------------------------- ###
@@ -123,11 +123,7 @@ class robot:
         # TODO: return the final, complete list of measurements
         return measurements
         
-    def if_continue_move():
-        if keyboard.is_pressed('escape'):
-            return False
-        else:
-            return True
+
 
 
 
