@@ -67,18 +67,16 @@ def print_positions(poses):
     i+=1
 
 
-world = []
 #2D Array of empty world
-for i in range(int(world_size)):
-    world.append([])
-    for j in range(int(world_size)):
-        world[i].append(0)
+world = np.zeros((int(world_size), int(world_size)))
 
 
 
-# create the plot
-fig, ax = plt.subplots()
-# ax[0].plot(#put all the landmarks and combine the rovers)
+# create the plot layout
+####TASK######
+#Make the number of plots dynamic to the number of robots
+##############
+fig, axes = plt.subplots(2,2)
 
 
 #get graph color
@@ -87,25 +85,12 @@ def get_cmap(n, name='hsv'):
     RGB color; the keyword argument name must be a standard mpl colormap name.'''
     return plt.cm.get_cmap(name, n)
 
-# rect = plt.Rectangle((i, -0.5), 1, 1, facecolor=cmap(i))
 
-#From StackOverflow example
-
-def positions():
-    a = [[particle[0] for particle in robot_list[index].record_movement], [
-        particle[1] for particle in robot_list[index].record_movement]]
-    for i in range(len(a[0])):
-            world[int(a[0][i])][int(a[1][i])]=100
-    b = [[particle[0] for particle in robot_list[index].landmarks], [
-                particle[1] for particle in robot_list[index].landmarks]]
-    for i in range(len(b[0])):
-            world[int(b[0][i])][int(b[1][i])]=50
-    return world
 
 def animate(data):
     
-    print(data)
     for index in range(len(robot_list)):
+        empty_world = np.zeros((int(world_size), int(world_size)))
         robot_list[index].detect_landmarks()
         robot_list[index].move()
         
@@ -113,51 +98,29 @@ def animate(data):
             particle[1] for particle in robot_list[index].record_movement]]
         for i in range(len(a[0])):
                 world[int(a[0][i])][int(a[1][i])]=100
+                empty_world[int(a[0][i])][int(a[1][i])]=100
         b = [[particle[0] for particle in robot_list[index].landmarks], [
                     particle[1] for particle in robot_list[index].landmarks]]
         for i in range(len(b[0])):
                 world[int(b[0][i])][int(b[1][i])]=50
+                empty_world[int(b[0][i])][int(b[1][i])]=50
+        
+        fig.axes[index].clear()
+        fig.axes[index].matshow(empty_world)
             
-        ax.clear()
-        ax.matshow(world)
-    # return world
-        #ax[0,i].set_data(b, color = 'black')
-
-"""
-def animate(i): #i[0, ..., world_size]
-    ax.clear()
-    ax.colorbar(ax.matshow(world))
-"""
-
-# def data_gen():
-#     while True:
-#         yield positions()
-
-
-# mat = ax[0,0].matshow(world)
+    fig.axes[-2].clear()
+    fig.axes[-2].matshow(world)
 
 
 
+for ax in axes.flat:
+    im = ax.matshow(world, vmin=0, vmax=100)
 
-# for index in range(len(robot_list)):
-#     a = [[particle[0] for particle in robot_list[index].record_movement], [
-#         particle[1] for particle in robot_list[index].record_movement]]
-#     for i in range(len(a[0])):
-#             world[int(a[0][i])][int(a[1][i])]=100
-#     b = [[particle[0] for particle in robot_list[index].landmarks], [
-#                 particle[1] for particle in robot_list[index].landmarks]]
-#     for i in range(len(b[0])):
-#             world[int(b[0][i])][int(b[1][i])]=50
-plt.colorbar(ax.matshow(world))
 
-# mat2 = ax[1,1].matshow(world)
-# mat3 = ax[1,2].matshow(world)
-ani = animation.FuncAnimation(fig, animate, frames = 100, interval=20)
+
+fig.colorbar(im,ax=axes.ravel().tolist())
+
+ani = animation.FuncAnimation(fig, animate, frames = 500, interval=1)
+ani.save('orbita.gif', writer='imagemagick', fps=30)
 plt.show()
-
-# draw the plot
-
-
-
-# plt.show()
 
