@@ -37,8 +37,8 @@ class robot:
 
     # returns a positive, random float
 
-    def rand(self):
-        return random.random() * 2.0 - 1.0
+    # def rand(self):
+    #     return random.random() * 2.0 - 1.0
 
     # --------
     # move: attempts to move robot by dx, dy. If outside world
