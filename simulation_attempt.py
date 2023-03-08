@@ -13,6 +13,7 @@ num_landmarks = 6
 running = True
 world_size = 100.0    # size of world (square)
 
+
 # make_landmarks:
 # # make random landmarks located in the world
 def make_landmarks(num_landmarks):
@@ -30,6 +31,20 @@ def make_landmarks(num_landmarks):
     
     
     return landmarks
+
+#############################################
+
+#Pheromone Area!
+
+pheromone_map = []
+def make_pheromone_area(world_size):
+    n = int(world_size)
+    return np.zeros((n, n), int)
+
+pheromone_map = make_pheromone_area(world_size)
+
+#############################################
+
 
 # robot parameters
 measurement_range = 5.0     # range at which we can sense landmarks
