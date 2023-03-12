@@ -105,22 +105,15 @@ def get_cmap(n, name='hsv'):
 
 def neighbour(robot1, robot2, area_size):
 
-    print("1x:", robot1.x,", 2x:", robot2.x)
-    print("1y:", robot1.y,", 2y:", robot2.y)
-
     a = robot1.x
     b = robot1.y
     c = robot2.x
     d = robot2.y
 
-    if ((a < (b + area_size)) and (a > (b - area_size))) or (
-    (c < (d + area_size)) and (c > (d + area_size))):
-        print("yes!")
+    if ((a < (c + area_size)) and (a > (c - area_size))) and (
+    (b < (d + area_size)) and (b > (d - area_size))):
         return True
     return False
-
-
-
 
 #############################################
 
@@ -146,7 +139,7 @@ def animate(data):
                 empty_world[int(b[0][i])][int(b[1][i])]=50"""
 
         for index2 in range(len(robot_list)):
-            if (neighbour(robot_list[index], robot_list[index2], 1)):
+            if (neighbour(robot_list[index], robot_list[index2], 20)):
                 robot_list[index].add_records(robot_list[index2])
                 robot_list[index2].add_records(robot_list[index])
         
@@ -170,6 +163,6 @@ for ax in axes.flat:
 fig.colorbar(im,ax=axes.ravel().tolist())
 
 ani = animation.FuncAnimation(fig, animate, frames = 500, interval=1)
-#ani.save('orbita.gif', writer='imagemagick', fps=30)
+ani.save('orbita.gif', writer='imagemagick', fps=30)
 plt.show()
 
