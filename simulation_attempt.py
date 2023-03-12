@@ -40,7 +40,7 @@ pheromone_map = []
 def make_pheromone_area(world_size):
     n = int(world_size)
     return np.zeros((n, n), int)
-
+    
 pheromone_map = make_pheromone_area(world_size)
 
 #############################################
@@ -101,27 +101,61 @@ def get_cmap(n, name='hsv'):
     return plt.cm.get_cmap(name, n)
 
 
+################### Neighbour-search ##########################
+
+def neighbour(robot1, robot2, area_size):
+
+    print("1x:", robot1.x,", 2x:", robot2.x)
+    print("1y:", robot1.y,", 2y:", robot2.y)
+
+    a = robot1.x
+    b = robot1.y
+    c = robot2.x
+    d = robot2.y
+
+    if ((a < (b + area_size)) and (a > (b - area_size))) or (
+    (c < (d + area_size)) and (c > (d + area_size))):
+        print("yes!")
+        return True
+    return False
+
+
+
+
+#############################################
+
+
 
 def animate(data):
     
+    world = np.zeros((int(world_size), int(world_size)))
     for index in range(len(robot_list)):
         empty_world = np.zeros((int(world_size), int(world_size)))
         robot_list[index].detect_landmarks()
         robot_list[index].move()
         
-        a = [[particle[0] for particle in robot_list[index].record_movement], [
+        """a = [[particle[0] for particle in robot_list[index].record_movement], [
             particle[1] for particle in robot_list[index].record_movement]]
         for i in range(len(a[0])):
                 world[int(a[0][i])][int(a[1][i])]=100
                 empty_world[int(a[0][i])][int(a[1][i])]=100
         b = [[particle[0] for particle in robot_list[index].landmarks], [
-                    particle[1] for particle in robot_list[index].landmarks]]
+                particle[1] for particle in robot_list[index].landmarks]]
         for i in range(len(b[0])):
                 world[int(b[0][i])][int(b[1][i])]=50
-                empty_world[int(b[0][i])][int(b[1][i])]=50
+                empty_world[int(b[0][i])][int(b[1][i])]=50"""
+
+        for index2 in range(len(robot_list)):
+            if (neighbour(robot_list[index], robot_list[index2], 1)):
+                robot_list[index].add_records(robot_list[index2])
+                robot_list[index2].add_records(robot_list[index])
+        
+        empty_world = robot_list[index].world_map
         
         fig.axes[index].clear()
         fig.axes[index].matshow(empty_world)
+
+        world += empty_world
             
     fig.axes[-2].clear()
     fig.axes[-2].matshow(world)
@@ -136,6 +170,6 @@ for ax in axes.flat:
 fig.colorbar(im,ax=axes.ravel().tolist())
 
 ani = animation.FuncAnimation(fig, animate, frames = 500, interval=1)
-ani.save('orbita.gif', writer='imagemagick', fps=30)
+#ani.save('orbita.gif', writer='imagemagick', fps=30)
 plt.show()
 

@@ -1,5 +1,6 @@
 from math import *
 import random
+import numpy as np
 
 
 
@@ -34,6 +35,7 @@ class robot:
         self.distance = 1.0 #The size of the step that the robot takes
         self.orientation = 0
         self.record_movement = [[self.x, self.y, self.orientation]] #record_movement[x,y,orientation]
+        self.world_map = np.zeros((int(world_size), int(world_size)), bool)
 
     # returns a positive, random float
 
@@ -73,6 +75,7 @@ class robot:
         self.y =  y
         self.orientation = orientation
         self.record_movement.append([self.x,self.y, self.orientation])
+        self.world_map[int(self.x)][int(self.y)] = 1
 
     def check_if_collide(self, x, y):
         for index in range(len(self.landmarks)):
@@ -132,5 +135,23 @@ class robot:
         return 'Robot: [x=%.5f y=%.5f]'  % (self.x, self.y)
 
 
+    ###### Adding records of another robot to this one. #####
+    def add_records(self,robot2):
+        self.world_map = self.world_map + robot2.world_map
+
+
 
 ####### END robot class #######
+
+
+
+####### Create its own map #######
+
+# This will help two things-
+# a) Easy to print out/ graph
+# b) Easy to add/store other records. Avoids unlimited records as well.
+
+# Since it's an np matrix, we can simply just add two 'maps' together, quickly.
+# the '+' sign is just a quick-hand 'or' operator.
+
+
