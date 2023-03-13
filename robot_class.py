@@ -1,6 +1,7 @@
 from math import *
 import random
 import numpy as np
+from PID_controller_sim.py import PID
 
 
 ### ------------------------------------- ###
@@ -35,7 +36,7 @@ class robot:
         self.pos = [world_size * random.random(),
                          world_size * random.random(), 0]
         # Unecessary
-        # self.record_movement = [[self.x, self.y, self.orientation]] #record_movement[x,y,orientation]
+        self.record_movement = [[self.x, self.y, self.orientation]] #record_movement[x,y,orientation]
     def lim_angle(angle):
         while angle < 0:
            angle += 2*pi
@@ -146,20 +147,32 @@ class robot:
             
         
         
-    def follower_pos(self, leader, wing_pos):
+    def follower_pos(self, leader, wing_pos, dt = 0.1):
         goal_x, goal_y = self.goal_position(5,leader)
         goal_theta = leader.pos[2]
         np_follower_array = np.array(self.pos)
         error_frame = np.array([goal_x - self.pos[0], goal_y - self.pos[1],
                        goal_theta - self.pos[2]])
-        follower_heading_error = np.multiply([[cos(self.pos[2]), sin(self.pos[2], 0)],
+        follower_heading_error = np.matmul([[cos(self.pos[2]), sin(self.pos[2], 0)],
                         [-sin(self.pos[2]), cos(self.pos[2]), 0],
                         ], error_frame.transpose())
         
         #E(t) is all the errors. Multiply the errors with the PID controller
+        #error, integral error, derivative error
+        E_t = lambda x: [follower_heading_error[x], following_heading_error[x]*dt, following_heading_error[x]/dt]
+        H_t = np.array[[E_t[0], 0, 0],
+               [0, E_t[1], follower_heading_error[2]]]
+        #Ki, Kp, Kd
+        K_t = [1,10,0.001]
+        #[[v],[w]]
+        vel = np.matmul(K_t, H_t)
+        transform = np.array([cos(np_follower_array), 0], 
+                             [sin(np_follower_array), 0],
+                             [0, 1])
+        ###Put new_pos in move function because it is moving now
+        new_pos = np_follower_array +  np.matmul(transform, vel)
+        self.pos = new_pos.tolist()
         
-        
-        #create the PID Controller
         
         
         
