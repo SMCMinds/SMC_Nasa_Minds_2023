@@ -1,6 +1,6 @@
 from math import *
 import random
-
+import numpy as np
 
 
 ### ------------------------------------- ###
@@ -24,27 +24,30 @@ class robot:
     #   creates a robot with the specified parameters and initializes
     #   the location (self.x, self.y) to the center of the world
     #
-    def __init__(self, world_size=100.0, measurement_range=30.0, world_landmarks = 0): #world_landmarks only for this simulation
+    # world_landmarks only for this simulation
+    def __init__(self, world_size=100.0, measurement_range=30.0, world_landmarks=0):
         self.world_size = world_size
         self.measurement_range = measurement_range
-        self.x = world_size * random.random()
-        self.y = world_size * random.random()
-        self.landmarks = [] #landmarks[x][y] seen by rover
+        self.landmarks = []  # landmarks[x][y] seen by rover
         self.world_landmarks = world_landmarks
-        self.distance = 1.0 #The size of the step that the robot takes
-        self.orientation = 0
-        self.record_movement = [[self.x, self.y, self.orientation]] #record_movement[x,y,orientation]
-
-    # returns a positive, random float
-
-    # def rand(self):
-    #     return random.random() * 2.0 - 1.0
-
-    # --------
-    # move: attempts to move robot by dx, dy. If outside world
-    #       boundary, then the move does nothing and instead returns failure
-
+        self.distance = 1.0  # The size of the step that the robot takes
+        #position x,y,theta
+        self.pos = [world_size * random.random(),
+                         world_size * random.random(), 0]
+        # Unecessary
+        # self.record_movement = [[self.x, self.y, self.orientation]] #record_movement[x,y,orientation]
+    def lim_angle(angle):
+        while angle < 0:
+           angle += 2*pi
+        while angle > (2*pi):
+           angle -= 2*pi
+        return angle
+            
     def move(self):
+        ##make sure angle is within 2pi
+        
+        #old code#
+        '''
         random.seed()
         #initialize
         orientation = self.orientation + random.uniform(-2,2)/5
@@ -53,7 +56,7 @@ class robot:
         x = self.x + dx
         y = self.y + dy
         anti_loop_counter = 0
-        
+
         #check if new coordinate goes out of bounds or hits a landmark
         while self.check_if_collide(x,y) or x < 0.0 or x > self.world_size or y < 0.0 or y > self.world_size:
             #### In any collision, the robot will automatically turn left
@@ -65,27 +68,110 @@ class robot:
                 dx *=2
             x = self.x + dx
             y = self.y + dy
-                
+
             anti_loop_counter+=1
-        
+
         #assignment
         self.x = x
         self.y =  y
         self.orientation = orientation
         self.record_movement.append([self.x,self.y, self.orientation])
-
-    def check_if_collide(self, x, y):
-        for index in range(len(self.landmarks)):
+'''
+    
+    #Ensure this function is only called when leader is ahead
+    #Create a check if in front function
+    #0 for error
+    #1 for right
+    #2 for left
+    def wing_pos(self, leader):
+        dist_x = leader.pos[0] - self.pos[0] #x
+        dist_y = leader.pos[1] - self.pos[1] #y
+        leading_theta = self.lim_angle(leader.pos[2])
+        if leading_theta < pi/2:
+            if dist_x < 0 and dist_y < 0: #Q3
+                pos_theta = abs(atan2(dist_y,dist_x))
+                if pos_theta > leading_theta:
+                    return 1
+                else: return 2
+            if dist_x > 0 and dist_y < 0: #Q4
+                return 1
+            if dist_x < 0 and dist_y > 0: #Q2
+                return 2
+        elif leading_theta < pi:
+            if dist_x > 0 and dist_y > 0: #Q1
+                return 1
+            if dist_x < 0 and dist_y < 0: #Q3
+                return 2
+            if dist_x > 0 and dist_y < 0: #Q4
+                pos_theta = pi + atan2(dist_y,dist_x)
+                if pos_theta > leading_theta:
+                    return 1
+                else: return 2       
+        elif leading_theta < 3*pi/2:
+            if dist_x > 0 and dist_y > 0: #Q1
+                pos_theta = pi + atan2(dist_y,dist_x)
+                if pos_theta > leading_theta:
+                    return 1
+                else: return 2
+            if dist_x < 0 and dist_y > 0: #Q2
+                return 2
+            if dist_x > 0 and dist_y < 0:
+                return 1             
+        elif leading_theta < 2*pi:
+            if dist_x > 0 and dist_y > 0: #Q1
+                return 2
+            if dist_x < 0 and dist_y > 0: #Q2
+                pos_theta = pi + atan2(dist_y,dist_x)
+                if pos_theta > leading_theta:
+                    return 1
+                else: return 2
+            if dist_x < 0 and dist_y < 0: #Q3
+                return 1
             
-            # dist_x = self.landmarks[index][0] - self.x
-            # dist_y = self.landmarks[index][1] - self.y
+        return 0
+                            
+    def goal_position(self,spacing, leader):
+        left_or_right = self.wing_pos(leader)
+        leading_theta = self.lim_angle(leader.pos[2])
+        angle_spacing = pi/4
+        if left_or_right == 1: #right wing
+            angle_of_following = leading_theta - pi/2 -angle_spacing
+            return -1*spacing*cos(angle_of_following), spacing*sin(angle_of_following)
+        if left_or_right == 2:
+            angle_of_following = leading_theta + pi/2 + angle_spacing
+            return spacing*cos(angle_of_following), spacing*sin(angle_of_following)
+        else:
+            print('goal position error')
+            return 0
+            
+        
+        
+    def follower_pos(self, leader, wing_pos):
+        goal_x, goal_y = self.goal_position(5,leader)
+        goal_theta = leader.pos[2]
+        np_follower_array = np.array(self.pos)
+        error_frame = np.array([goal_x - self.pos[0], goal_y - self.pos[1],
+                       goal_theta - self.pos[2]])
+        follower_heading_error = np.multiply([[cos(self.pos[2]), sin(self.pos[2], 0)],
+                        [-sin(self.pos[2]), cos(self.pos[2]), 0],
+                        ], error_frame.transpose())
+        
+        #E(t) is all the errors. Multiply the errors with the PID controller
+        
+        
+        #create the PID Controller
+        
+        
+        
+
+    def if_collide_with_landmark(self, x, y):
+        for index in range(len(self.landmarks)):
             dist_new_x = self.landmarks[index][0] - x
             dist_new_y = self.landmarks[index][1] - y
             # check the robot crosses the landmark position
             if((abs(dist_new_y) < self.measurement_range/2) and (abs(dist_new_x) < self.measurement_range/2)):
                 return True
         return False
-
 
     # --------
     # sense: returns x- and y- distances to landmarks within visibility range
@@ -94,22 +180,23 @@ class robot:
     #        landmarks to be visible at all times
     #
 
-    
     ###############CHANGE#############
-    #Places the landmark in front of the robot
+    # Places the landmark in front of the robot
+
     def detect_landmarks(self):
         orientation = random.random() * 2.0 * pi
         obstacles = self.simulate_sense()
-        for i in range(len(obstacles)): 
-            if obstacles[i][0] < self.measurement_range or obstacles[i][1] < self.measurement_range: #Left off here
+        for i in range(len(obstacles)):
+            if obstacles[i][0] < self.measurement_range or obstacles[i][1] < self.measurement_range:  # Left off here
                 # obstacle_x = self.x * cos(orientation)
                 # obstacle_y = self.y * sin(orientation)
-                self.landmarks.append([self.x + obstacles[i][0], self.y + obstacles[i][1]])
-            
+                self.landmarks.append(
+                    [self.x + obstacles[i][0], self.y + obstacles[i][1]])
+
     ##############CHANGE###############
-    
-    
+
     ##########ONLY FOR SIMULATION#############
+
     def simulate_sense(self):
         measurements = []
         # TODO: iterate through all of the landmarks in a world
@@ -122,15 +209,11 @@ class robot:
                 measurements.append([dist_x, dist_y])
         # TODO: return the final, complete list of measurements
         return measurements
-        
-
-
-
 
     # called when print(robot) is called; prints the robot's location
-    def __repr__(self):
-        return 'Robot: [x=%.5f y=%.5f]'  % (self.x, self.y)
 
+    def __repr__(self):
+        return 'Robot: [x=%.5f y=%.5f]' % (self.x, self.y)
 
 
 ####### END robot class #######
