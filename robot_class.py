@@ -1,7 +1,7 @@
 from math import *
 import random
 import numpy as np
-from PID_controller_sim.py import PID
+
 
 
 ### ------------------------------------- ###
@@ -33,10 +33,10 @@ class robot:
         self.world_landmarks = world_landmarks
         self.distance = 1.0  # The size of the step that the robot takes
         #position x,y,theta
-        self.pos = [world_size * random.random(),
-                         world_size * random.random(), 0]
-        # Unecessary
-        self.record_movement = [[self.x, self.y, self.orientation]] #record_movement[x,y,orientation]
+        self.vel = np.array([[4],[0]])
+        self.pos = [world_size * random.random(),world_size * random.random(),0]
+        self.record_movement = [[self.pos[0], self.pos[1], self.pos[2]]] #record_movement[x,y,orientation]
+        
     def lim_angle(angle):
         while angle < 0:
            angle += 2*pi
@@ -45,11 +45,22 @@ class robot:
         return angle
             
     def move(self):
-        ##make sure angle is within 2pi
+        
+        np_follower_array = np.array(self.pos)
+        transform = np.array([[cos(self.pos[2]), 0], 
+                             [sin(self.pos[2]), 0],
+                             [0, 1]])
+        
+        ###Put new_pos in move function because it is moving now ####
+        ### Make in terms of event frame###
+        ####Add Collision Avoidance########
+        #while self.check_if_collide(x,y) or x < 0.0 or x > self.world_size or y < 0.0 or y > self.world_size:
+        new_pos = np_follower_array +  np.matmul(transform, self.vel)
+        self.pos = new_pos.tolist()
+        self.record_movement.append(self.pos)
         
         #old code#
-        '''
-        random.seed()
+    ''' random.seed()
         #initialize
         orientation = self.orientation + random.uniform(-2,2)/5
         dx = cos(orientation) * self.distance
@@ -77,17 +88,16 @@ class robot:
         self.y =  y
         self.orientation = orientation
         self.record_movement.append([self.x,self.y, self.orientation])
-'''
+        '''
     
-    #Ensure this function is only called when leader is ahead
-    #Create a check if in front function
-    #0 for error
-    #1 for right
-    #2 for left
     def wing_pos(self, leader):
+        #Ensure this function is only called when leader is ahead
+        #0 for error
+        #1 for right
+        #2 for left
         dist_x = leader.pos[0] - self.pos[0] #x
         dist_y = leader.pos[1] - self.pos[1] #y
-        leading_theta = self.lim_angle(leader.pos[2])
+        leading_theta = self.lim_angle(leader.record_movement[-1][2])
         if leading_theta < pi/2:
             if dist_x < 0 and dist_y < 0: #Q3
                 pos_theta = abs(atan2(dist_y,dist_x))
@@ -133,7 +143,7 @@ class robot:
                             
     def goal_position(self,spacing, leader):
         left_or_right = self.wing_pos(leader)
-        leading_theta = self.lim_angle(leader.pos[2])
+        leading_theta = self.lim_angle(leader.record_movement[-1][2])
         angle_spacing = pi/4
         if left_or_right == 1: #right wing
             angle_of_following = leading_theta - pi/2 -angle_spacing
@@ -149,30 +159,43 @@ class robot:
         
     def follower_pos(self, leader, wing_pos, dt = 0.1):
         goal_x, goal_y = self.goal_position(5,leader)
-        goal_theta = leader.pos[2]
+        goal_theta = leader.record_movement[-1][2]
         np_follower_array = np.array(self.pos)
-        error_frame = np.array([goal_x - self.pos[0], goal_y - self.pos[1],
-                       goal_theta - self.pos[2]])
-        follower_heading_error = np.matmul([[cos(self.pos[2]), sin(self.pos[2], 0)],
-                        [-sin(self.pos[2]), cos(self.pos[2]), 0],
-                        ], error_frame.transpose())
+        error_frame = np.array([[goal_x - self.record_movement[-1][0], goal_y - self.record_movement[-1][1],
+                       goal_theta - self.record_movement[-1][2]]])
+        follower_heading_error = lambda x: np.matmul([[cos(self.record_movement[x][2]), sin(self.record_movement[x][2], 0)],
+                        [-sin(self.record_movement[x][2]), cos(self.record_movement[x][2]), 0]],
+                                           error_frame.transpose())
         
         #E(t) is all the errors. Multiply the errors with the PID controller
         #error, integral error, derivative error
-        E_t = lambda x: [follower_heading_error[x], following_heading_error[x]*dt, following_heading_error[x]/dt]
-        H_t = np.array[[E_t[0], 0, 0],
-               [0, E_t[1], follower_heading_error[2]]]
+        #time based pid
+        '''E_t = lambda x: [follower_heading_error[x], following_heading_error[x]*dt, following_heading_error[x]/dt]
+            H_t = np.array[[E_t[0], 0, 0],
+                [0, E_t[1], follower_heading_error[2]]]'''
+                
+        #######Might Have an Error from the lack of array size############
+        if len(self.record_movement) < 3:
+            E_k = lambda x: [follower_heading_error(-1)[x], 
+                         following_heading_error(-1)[x],
+                         following_heading_error(-1)[x]]
+        else:
+            E_k = lambda x: [follower_heading_error(-1)[x] - follower_heading_error(-2)[x], 
+                         following_heading_error(-1)[x],
+                         following_heading_error(-1)[x] - 2*following_heading_error(-2)[x] + following_heading_error(-3)[x]]
+        ##################################################################
+        
+        H_k = np.array([[E_k(0), 0, 0],
+                [0, E_k(1), follower_heading_error(-1)[2]]])
         #Ki, Kp, Kd
-        K_t = [1,10,0.001]
+        K_e = [1,10,0.001]
         #[[v],[w]]
-        vel = np.matmul(K_t, H_t)
-        transform = np.array([cos(np_follower_array), 0], 
-                             [sin(np_follower_array), 0],
-                             [0, 1])
-        ###Put new_pos in move function because it is moving now ####
-        ### Make in terms of event frame###
-        new_pos = np_follower_array +  np.matmul(transform, vel)
-        self.pos = new_pos.tolist()
+        vel = np.matmul(K_e, H_k)
+        self.vel += vel
+        transform = np.array([[cos(self.record_movement[-1][2]), 0], 
+                             [sin(self.record_movement[-1][2]), 0],
+                             [0, 1]])
+        
         
         
         
@@ -205,7 +228,7 @@ class robot:
                 # obstacle_x = self.x * cos(orientation)
                 # obstacle_y = self.y * sin(orientation)
                 self.landmarks.append(
-                    [self.x + obstacles[i][0], self.y + obstacles[i][1]])
+                    [self.record_movement[-1][0] + obstacles[i][0], self.record_movement[-1][1] + obstacles[i][1]])
 
     ##############CHANGE###############
 
@@ -216,8 +239,8 @@ class robot:
         # TODO: iterate through all of the landmarks in a world
         for index in range(len(self.world_landmarks)):
             # distance between landmark and rover
-            dist_x = self.world_landmarks[index][0] - self.x
-            dist_y = self.world_landmarks[index][1] - self.y
+            dist_x = self.world_landmarks[index][0] - self.record_movement[-1][0]
+            dist_y = self.world_landmarks[index][1] - self.record_movement[-1][1]
             # check if landmark is in range
             if(abs(dist_x) < self.measurement_range and abs(dist_y) < self.measurement_range):
                 measurements.append([dist_x, dist_y])

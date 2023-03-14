@@ -123,6 +123,6 @@ for ax in axes.flat:
 fig.colorbar(im,ax=axes.ravel().tolist())
 
 ani = animation.FuncAnimation(fig, animate, frames = 500, interval=1)
-ani.save('orbita.gif', writer='imagemagick', fps=30)
+# ani.save('orbita.gif', writer='Pillow', fps=30)
 plt.show()
 
