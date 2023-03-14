@@ -56,6 +56,7 @@ for i in range(num_of_robots):
 
 time_steps = 100
 
+
 #prints all the coordinates that the robot makes
 def print_positions(poses):
     print('\n')
@@ -88,31 +89,24 @@ while num_of_graphs > graph_spaces:
 fig, axes = plt.subplots(vertical_graph_stack,horizontal_graph_stack)
 
 #animate the graphs
-def animate(data):
+for i  in range(100):
     for index in range(len(robot_list)):
-        empty_world = np.zeros((int(world_size), int(world_size)))
         robot_list[index].detect_landmarks()
         robot_list[index].move()
         
-        a = [[particle[0] for particle in robot_list[index].record_movement], [
-            particle[1] for particle in robot_list[index].record_movement]]
-        for i in range(len(a[0])):
-                world[int(a[0][i])][int(a[1][i])]=100
-                empty_world[int(a[0][i])][int(a[1][i])]=100
-        b = [[particle[0] for particle in robot_list[index].landmarks], [
-                    particle[1] for particle in robot_list[index].landmarks]]
-        for i in range(len(b[0])):
-                world[int(b[0][i])][int(b[1][i])]=50
-                empty_world[int(b[0][i])][int(b[1][i])]=50
+
+
+a = [[particle[0] for particle in robot_list[index].record_movement], [
+    particle[1] for particle in robot_list[index].record_movement]]
+for i in range(len(a[0])):
+        world[int(a[0][i])][int(a[1][i])]=100
+        empty_world[int(a[0][i])][int(a[1][i])]=100
+b = [[particle[0] for particle in robot_list[index].landmarks], [
+            particle[1] for particle in robot_list[index].landmarks]]
+for i in range(len(b[0])):
+        world[int(b[0][i])][int(b[1][i])]=50
+        empty_world[int(b[0][i])][int(b[1][i])]=50
         
-        fig.axes[index].clear()
-        #If want different colormap, add cmap in this parameters
-        fig.axes[index].matshow(empty_world)
-            
-    fig.axes[-2].clear()
-    fig.axes[-2].matshow(world)
-
-
 #Initialize the graphs
 for ax in axes.flat:
     #If want different colormap, add cmap in this parameters
@@ -125,4 +119,3 @@ fig.colorbar(im,ax=axes.ravel().tolist())
 ani = animation.FuncAnimation(fig, animate, frames = 500, interval=1)
 # ani.save('orbita.gif', writer='Pillow', fps=30)
 plt.show()
-

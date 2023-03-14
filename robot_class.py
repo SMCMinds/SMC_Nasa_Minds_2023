@@ -33,7 +33,7 @@ class robot:
         self.world_landmarks = world_landmarks
         self.distance = 1.0  # The size of the step that the robot takes
         #position x,y,theta
-        self.vel = np.array([[4],[0]])
+        self.vel = np.array([4,0])
         self.pos = [world_size * random.random(),world_size * random.random(),0]
         self.record_movement = [[self.pos[0], self.pos[1], self.pos[2]]] #record_movement[x,y,orientation]
         
@@ -57,6 +57,8 @@ class robot:
         #while self.check_if_collide(x,y) or x < 0.0 or x > self.world_size or y < 0.0 or y > self.world_size:
         new_pos = np_follower_array +  np.matmul(transform, self.vel)
         self.pos = new_pos.tolist()
+        ### pos becomes a list within a list. It is probably because the matrix multiplication is creating a 
+        ### vertical matrix
         self.record_movement.append(self.pos)
         
         #old code#
@@ -233,14 +235,13 @@ class robot:
     ##############CHANGE###############
 
     ##########ONLY FOR SIMULATION#############
-
     def simulate_sense(self):
         measurements = []
         # TODO: iterate through all of the landmarks in a world
         for index in range(len(self.world_landmarks)):
             # distance between landmark and rover
-            dist_x = self.world_landmarks[index][0] - self.record_movement[-1][0]
-            dist_y = self.world_landmarks[index][1] - self.record_movement[-1][1]
+            dist_x = self.world_landmarks[index][0] - self.pos[0]
+            dist_y = self.world_landmarks[index][1] - self.pos[1]
             # check if landmark is in range
             if(abs(dist_x) < self.measurement_range and abs(dist_y) < self.measurement_range):
                 measurements.append([dist_x, dist_y])
@@ -252,5 +253,7 @@ class robot:
     def __repr__(self):
         return 'Robot: [x=%.5f y=%.5f]' % (self.x, self.y)
 
+# ob = robot(100, 5, 6)
+# print(ob.record_movement[-1][0])
 
 ####### END robot class #######
