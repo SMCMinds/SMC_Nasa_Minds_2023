@@ -169,7 +169,8 @@ class robot:
         transform = np.array([cos(np_follower_array), 0], 
                              [sin(np_follower_array), 0],
                              [0, 1])
-        ###Put new_pos in move function because it is moving now
+        ###Put new_pos in move function because it is moving now ####
+        ### Make in terms of event frame###
         new_pos = np_follower_array +  np.matmul(transform, vel)
         self.pos = new_pos.tolist()
         
