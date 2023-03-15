@@ -13,6 +13,8 @@ num_landmarks = 6
 running = True
 world_size = 100.0    # size of world (square)
 
+
+# make_landmarks:
 # # make random landmarks located in the world
 def make_landmarks(num_landmarks):
     #pick random start point
@@ -41,6 +43,20 @@ def make_landmarks(num_landmarks):
     
     
     return landmarks
+
+#############################################
+
+#Pheromone Area!
+
+pheromone_map = []
+def make_pheromone_area(world_size):
+    n = int(world_size)
+    return np.zeros((n, n), int)
+    
+pheromone_map = make_pheromone_area(world_size)
+
+#############################################
+
 
 # robot parameters
 measurement_range = 5.0     # range at which we can sense landmarks
@@ -86,27 +102,65 @@ while num_of_graphs > graph_spaces:
 # create the plot layout
 fig, axes = plt.subplots(vertical_graph_stack,horizontal_graph_stack)
 
-#animate the graphs
+
+
+
+#get graph color
+def get_cmap(n, name='hsv'):
+    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
+    RGB color; the keyword argument name must be a standard mpl colormap name.'''
+    return plt.cm.get_cmap(name, n)
+
+
+################### Neighbour-search ##########################
+
+def neighbour(robot1, robot2, area_size):
+
+    a = robot1.x
+    b = robot1.y
+    c = robot2.x
+    d = robot2.y
+
+    if ((a < (c + area_size)) and (a > (c - area_size))) and (
+    (b < (d + area_size)) and (b > (d - area_size))):
+        return True
+    return False
+
+#############################################
+
+
+
 def animate(data):
+    
+    world = np.zeros((int(world_size), int(world_size)))
     for index in range(len(robot_list)):
         empty_world = np.zeros((int(world_size), int(world_size)))
         robot_list[index].detect_landmarks()
         robot_list[index].move()
         
-        a = [[particle[0] for particle in robot_list[index].record_movement], [
+        """a = [[particle[0] for particle in robot_list[index].record_movement], [
             particle[1] for particle in robot_list[index].record_movement]]
         for i in range(len(a[0])):
                 world[int(a[0][i])][int(a[1][i])]=100
                 empty_world[int(a[0][i])][int(a[1][i])]=100
         b = [[particle[0] for particle in robot_list[index].landmarks], [
-                    particle[1] for particle in robot_list[index].landmarks]]
+                particle[1] for particle in robot_list[index].landmarks]]
         for i in range(len(b[0])):
                 world[int(b[0][i])][int(b[1][i])]=50
-                empty_world[int(b[0][i])][int(b[1][i])]=50
+                empty_world[int(b[0][i])][int(b[1][i])]=50"""
+
+        for index2 in range(len(robot_list)):
+            if (neighbour(robot_list[index], robot_list[index2], 20)):
+                robot_list[index].add_records(robot_list[index2])
+                robot_list[index2].add_records(robot_list[index])
+        
+        empty_world = robot_list[index].world_map
         
         fig.axes[index].clear()
         #If want different colormap, add cmap in this parameters
         fig.axes[index].matshow(empty_world)
+
+        world += empty_world
             
     fig.axes[-2].clear()
     fig.axes[-2].matshow(world)
