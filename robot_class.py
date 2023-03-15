@@ -76,7 +76,6 @@ class robot:
         
         #Convert position to Python list    
         self.pos = new_pos.tolist()
-        print(self.pos)
         
         #Safe to the record
         self.record_movement.append(self.pos)

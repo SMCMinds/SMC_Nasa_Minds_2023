@@ -44,8 +44,7 @@ def make_landmarks(num_landmarks):
 
 # robot parameters
 measurement_range = 5.0     # range at which we can sense landmarks
-# distance by which robot (intends to) move each iteratation
-distance = 1.0
+
 
 #Initiate robot class
 landmarks = make_landmarks(num_landmarks)
