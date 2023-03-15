@@ -32,11 +32,11 @@ class robot:
         self.landmarks = []  # landmarks[x][y] seen by rover
         self.world_landmarks = world_landmarks
         self.distance = 1.0  # The size of the step that the robot takes
-        #position x,y,theta
-        self.vel = np.array([4,0])
-        self.pos = [world_size * random.random(),world_size * random.random(),0]
-        self.record_movement = [[self.pos[0], self.pos[1], self.pos[2]]] #record_movement[x,y,orientation]
+        self.vel = np.array([2.0,0.0]) # [velocity, angular velocity]
+        self.pos = [world_size * random.random(),world_size * random.random(),0] #position [x,y,theta] , Made purely so computer can access easier
+        self.record_movement = [[self.pos[0], self.pos[1], self.pos[2]]] #record_movement[x,y,theta]
         
+    #Limit the angular orientation between 0 < theta < pi
     def lim_angle(angle):
         while angle < 0:
            angle += 2*pi
@@ -44,54 +44,46 @@ class robot:
            angle -= 2*pi
         return angle
             
+    #Movement Algorithm
     def move(self):
-        
         np_follower_array = np.array(self.pos)
         transform = np.array([[cos(self.pos[2]), 0], 
                              [sin(self.pos[2]), 0],
                              [0, 1]])
-        
-        ###Put new_pos in move function because it is moving now ####
-        ### Make in terms of event frame###
+        anti_stuck_loop = 0
         ####Add Collision Avoidance########
-        #while self.check_if_collide(x,y) or x < 0.0 or x > self.world_size or y < 0.0 or y > self.world_size:
         new_pos = np_follower_array +  np.matmul(transform, self.vel)
-        self.pos = new_pos.tolist()
-        ### pos becomes a list within a list. It is probably because the matrix multiplication is creating a 
-        ### vertical matrix
-        self.record_movement.append(self.pos)
         
-        #old code#
-    ''' random.seed()
-        #initialize
-        orientation = self.orientation + random.uniform(-2,2)/5
-        dx = cos(orientation) * self.distance
-        dy = sin(orientation) * self.distance
-        x = self.x + dx
-        y = self.y + dy
-        anti_loop_counter = 0
-
-        #check if new coordinate goes out of bounds or hits a landmark
-        while self.check_if_collide(x,y) or x < 0.0 or x > self.world_size or y < 0.0 or y > self.world_size:
-            #### In any collision, the robot will automatically turn left
-            orientation = orientation + 0.05 
-            dx = cos(orientation) * self.distance
-            dy = sin(orientation) * self.distance
-            if anti_loop_counter >= 10:
-                dx *=2
-                dx *=2
-            x = self.x + dx
-            y = self.y + dy
-
-            anti_loop_counter+=1
-
-        #assignment
-        self.x = x
-        self.y =  y
-        self.orientation = orientation
-        self.record_movement.append([self.x,self.y, self.orientation])
-        '''
+        #Check for collision of landmarks or boundaries
+        while self.if_collide_with_landmark(new_pos[0],new_pos[1]) or new_pos[0] < 0.0 or new_pos[0] > self.world_size or new_pos[1] < 0.0 or new_pos[1] > self.world_size:          
+            #Increase angular velocity to turn
+            self.vel[1] += 0.5 # 
+            
+            #Change the transform in correlation with the angular change
+            transform = np.array([[cos(new_pos[2]), 0], 
+                             [sin(new_pos[2]), 0],
+                             [0, 1]])
+            #Make new position
+            new_pos = np_follower_array +  np.matmul(transform, self.vel)
+            
+            #In case of infinite loop, increase the step size
+            anti_stuck_loop += 1
+            if anti_stuck_loop == 10:
+                self.vel[0] += 2
+        
+        #After position validated, reset angular velocity to 0
+        self.vel[1] = 0
+        
+        #Convert position to Python list    
+        self.pos = new_pos.tolist()
+        print(self.pos)
+        
+        #Safe to the record
+        self.record_movement.append(self.pos)
     
+    
+    
+    #Determine whether follower will be on the left or right
     def wing_pos(self, leader):
         #Ensure this function is only called when leader is ahead
         #0 for error
@@ -142,7 +134,8 @@ class robot:
                 return 1
             
         return 0
-                            
+    
+    #Return the goal coordinates                    
     def goal_position(self,spacing, leader):
         left_or_right = self.wing_pos(leader)
         leading_theta = self.lim_angle(leader.record_movement[-1][2])
@@ -158,8 +151,8 @@ class robot:
             return 0
             
         
-        
-    def follower_pos(self, leader, wing_pos, dt = 0.1):
+    #Use goal coordinates to navigate the follower robot 
+    def follower_pos(self, leader, wing_pos):
         goal_x, goal_y = self.goal_position(5,leader)
         goal_theta = leader.record_movement[-1][2]
         np_follower_array = np.array(self.pos)
@@ -198,43 +191,27 @@ class robot:
                              [sin(self.record_movement[-1][2]), 0],
                              [0, 1]])
         
-        
-        
-        
-        
-
+    #Check for collision with obstacles
     def if_collide_with_landmark(self, x, y):
         for index in range(len(self.landmarks)):
             dist_new_x = self.landmarks[index][0] - x
             dist_new_y = self.landmarks[index][1] - y
-            # check the robot crosses the landmark position
+            # check the robot crosses the landmark position, Avoidance when obstacle is half of detection range
             if((abs(dist_new_y) < self.measurement_range/2) and (abs(dist_new_x) < self.measurement_range/2)):
                 return True
         return False
 
-    # --------
-    # sense: returns x- and y- distances to landmarks within visibility range
-    #        because not all landmarks may be in this range, the list of measurements
-    #        is of variable length. Set measurement_range to -1 if you want all
-    #        landmarks to be visible at all times
-    #
-
-    ###############CHANGE#############
+##########Change???###############
     # Places the landmark in front of the robot
-
     def detect_landmarks(self):
         orientation = random.random() * 2.0 * pi
         obstacles = self.simulate_sense()
         for i in range(len(obstacles)):
             if obstacles[i][0] < self.measurement_range or obstacles[i][1] < self.measurement_range:  # Left off here
-                # obstacle_x = self.x * cos(orientation)
-                # obstacle_y = self.y * sin(orientation)
                 self.landmarks.append(
                     [self.record_movement[-1][0] + obstacles[i][0], self.record_movement[-1][1] + obstacles[i][1]])
+##############CHANGE###############
 
-    ##############CHANGE###############
-
-    ##########ONLY FOR SIMULATION#############
     def simulate_sense(self):
         measurements = []
         # TODO: iterate through all of the landmarks in a world
@@ -251,9 +228,10 @@ class robot:
     # called when print(robot) is called; prints the robot's location
 
     def __repr__(self):
-        return 'Robot: [x=%.5f y=%.5f]' % (self.x, self.y)
+        return 'Robot: [x=%.5f y=%.5f]' % (self.pos[0], self.pos[1])
+
+
+####### END robot class #######
 
 # ob = robot(100, 5, 6)
 # print(ob.record_movement[-1][0])
-
-####### END robot class #######

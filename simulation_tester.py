@@ -44,12 +44,11 @@ def make_landmarks(num_landmarks):
 
 # robot parameters
 measurement_range = 5.0     # range at which we can sense landmarks
-# distance by which robot (intends to) move each iteratation
-distance = 1.0
+
 
 #Initiate robot class
 landmarks = make_landmarks(num_landmarks)
-num_of_robots = 3
+num_of_robots = 1
 robot_list = []
 for i in range(num_of_robots):
     robot_list.append(robot(world_size, measurement_range, landmarks))
@@ -75,19 +74,9 @@ b = [[particle[0] for particle in landmarks], [
 for i in range(len(b[0])):
         world[int(b[0][i])][int(b[1][i])]=50
 
-
-# Optimize format of multiple graphs
-num_of_graphs = num_of_robots + 1
-vertical_graph_stack = int(sqrt(num_of_graphs))
-horizontal_graph_stack = vertical_graph_stack
-graph_spaces = vertical_graph_stack*horizontal_graph_stack
-while num_of_graphs > graph_spaces:
-    horizontal_graph_stack += 1
-    graph_spaces = vertical_graph_stack*horizontal_graph_stack
     
 # create the plot layout
-fig, axes = plt.subplots(vertical_graph_stack,horizontal_graph_stack)
-
+fig, ax = plt.subplots()
 #animate the graphs
 for i  in range(100):
     for index in range(len(robot_list)):
@@ -95,27 +84,23 @@ for i  in range(100):
         robot_list[index].move()
         
 
-
-a = [[particle[0] for particle in robot_list[index].record_movement], [
-    particle[1] for particle in robot_list[index].record_movement]]
-for i in range(len(a[0])):
-        world[int(a[0][i])][int(a[1][i])]=100
-        empty_world[int(a[0][i])][int(a[1][i])]=100
-b = [[particle[0] for particle in robot_list[index].landmarks], [
-            particle[1] for particle in robot_list[index].landmarks]]
-for i in range(len(b[0])):
-        world[int(b[0][i])][int(b[1][i])]=50
-        empty_world[int(b[0][i])][int(b[1][i])]=50
+for index in range(len(robot_list)):
+    a = [[particle[0] for particle in robot_list[index].record_movement], [
+        particle[1] for particle in robot_list[index].record_movement]]
+    for i in range(len(a[0])):
+            world[int(a[0][i])][int(a[1][i])]=100
+        
+    b = [[particle[0] for particle in robot_list[index].landmarks], [
+                particle[1] for particle in robot_list[index].landmarks]]
+    for i in range(len(b[0])):
+            world[int(b[0][i])][int(b[1][i])]=50
+        
         
 #Initialize the graphs
-for ax in axes.flat:
-    #If want different colormap, add cmap in this parameters
-    im = ax.imshow(world, vmin=0, vmax=100)
+image = ax.matshow(world, vmin=0, vmax=100)
 
 #Set Color map
 # fig.colorbar(im,ax=axes.ravel().tolist())
-fig.colorbar(im,ax=axes.ravel().tolist())
+fig.colorbar(image,ax=ax)
 
-ani = animation.FuncAnimation(fig, animate, frames = 500, interval=1)
-# ani.save('orbita.gif', writer='Pillow', fps=30)
 plt.show()
