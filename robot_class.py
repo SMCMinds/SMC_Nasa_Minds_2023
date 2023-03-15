@@ -3,6 +3,8 @@ from math import *
 import random
 import numpy as np
 
+
+
 #
 class robot:
 
@@ -21,6 +23,7 @@ class robot:
         self.vel = np.array([2.0,0.0]) # [velocity, angular velocity]
         self.pos = [world_size * random.random(),world_size * random.random(),0] #position [x,y,theta] , Made purely so computer can access easier
         self.record_movement = [[self.pos[0], self.pos[1], self.pos[2]]] #record_movement[x,y,theta]
+        self.world_map = np.zeros((int(world_size), int(world_size)), bool)
         
     #Limit the angular orientation between 0 < theta < pi
     def lim_angle(angle):
@@ -32,122 +35,14 @@ class robot:
             
     #Movement Algorithm
     def move(self):
-        np_follower_array = np.array(self.pos)
-        transform = np.array([[cos(self.pos[2]), 0], 
-                             [sin(self.pos[2]), 0],
-                             [0, 1]])
-        anti_stuck_loop = 0
-        ####Add Collision Avoidance########
-        new_pos = np_follower_array +  np.matmul(transform, self.vel)
-        
-        #Check for collision of landmarks or boundaries
-        while self.if_collide_with_landmark(new_pos[0],new_pos[1]) or new_pos[0] < 0.0 or new_pos[0] > self.world_size or new_pos[1] < 0.0 or new_pos[1] > self.world_size:          
-            #Increase angular velocity to turn
-            self.vel[1] += 0.5 # 
-            
-            #Change the transform in correlation with the angular change
-            transform = np.array([[cos(new_pos[2]), 0], 
-                             [sin(new_pos[2]), 0],
-                             [0, 1]])
-            #Make new position
-            new_pos = np_follower_array +  np.matmul(transform, self.vel)
-            
-            #In case of infinite loop, increase the step size
-            anti_stuck_loop += 1
-            if anti_stuck_loop == 10:
-                self.vel[0] += 2
-        
-        #After position validated, reset angular velocity to 0
-        self.vel[1] = 0
-        
-        #Convert position to Python list    
-        self.pos = new_pos.tolist()
-        
-        #Safe to the record
-        self.record_movement.append(self.pos)
-        
-        self.world_map[int(self.x)][int(self.y)] = 1
-    
-    
-    
-    #Determine whether follower will be on the left or right
-    def wing_pos(self, leader):
-        #Ensure this function is only called when leader is ahead
-        #0 for error
-        #1 for right
-        #2 for left
-        dist_x = leader.pos[0] - self.pos[0] #x
-        dist_y = leader.pos[1] - self.pos[1] #y
-        leading_theta = self.lim_angle(leader.record_movement[-1][2])
-        if leading_theta < pi/2:
-            if dist_x < 0 and dist_y < 0: #Q3
-                pos_theta = abs(atan2(dist_y,dist_x))
-                if pos_theta > leading_theta:
-                    return 1
-                else: return 2
-            if dist_x > 0 and dist_y < 0: #Q4
-                return 1
-            if dist_x < 0 and dist_y > 0: #Q2
-                return 2
-        elif leading_theta < pi:
-            if dist_x > 0 and dist_y > 0: #Q1
-                return 1
-            if dist_x < 0 and dist_y < 0: #Q3
-                return 2
-            if dist_x > 0 and dist_y < 0: #Q4
-                pos_theta = pi + atan2(dist_y,dist_x)
-                if pos_theta > leading_theta:
-                    return 1
-                else: return 2       
-        elif leading_theta < 3*pi/2:
-            if dist_x > 0 and dist_y > 0: #Q1
-                pos_theta = pi + atan2(dist_y,dist_x)
-                if pos_theta > leading_theta:
-                    return 1
-                else: return 2
-            if dist_x < 0 and dist_y > 0: #Q2
-                return 2
-            if dist_x > 0 and dist_y < 0:
-                return 1             
-        elif leading_theta < 2*pi:
-            if dist_x > 0 and dist_y > 0: #Q1
-                return 2
-            if dist_x < 0 and dist_y > 0: #Q2
-                pos_theta = pi + atan2(dist_y,dist_x)
-                if pos_theta > leading_theta:
-                    return 1
-                else: return 2
-            if dist_x < 0 and dist_y < 0: #Q3
-                return 1
-            
-        return 0
-    
-    #Return the goal coordinates                    
-    def goal_position(self,spacing, leader):
-        left_or_right = self.wing_pos(leader)
-        leading_theta = self.lim_angle(leader.record_movement[-1][2])
-        angle_spacing = pi/4
-        if left_or_right == 1: #right wing
-            angle_of_following = leading_theta - pi/2 -angle_spacing
-            return -1*spacing*cos(angle_of_following), spacing*sin(angle_of_following)
-        if left_or_right == 2:
-            angle_of_following = leading_theta + pi/2 + angle_spacing
-            return spacing*cos(angle_of_following), spacing*sin(angle_of_following)
-        else:
-            print('goal position error')
-            return 0
-            
-        
-    #Use goal coordinates to navigate the follower robot 
-    def follower_pos(self, leader, wing_pos):
-        goal_x, goal_y = self.goal_position(5,leader)
-        goal_theta = leader.record_movement[-1][2]
-        np_follower_array = np.array(self.pos)
-        error_frame = np.array([[goal_x - self.record_movement[-1][0], goal_y - self.record_movement[-1][1],
-                       goal_theta - self.record_movement[-1][2]]])
-        follower_heading_error = lambda x: np.matmul([[cos(self.record_movement[x][2]), sin(self.record_movement[x][2], 0)],
-                        [-sin(self.record_movement[x][2]), cos(self.record_movement[x][2]), 0]],
-                                           error_frame.transpose())
+        random.seed()
+        #initialize
+        orientation = self.orientation + random.uniform(-2,2)/5
+        dx = cos(orientation) * self.distance
+        dy = sin(orientation) * self.distance
+        x = self.x + dx
+        y = self.y + dy
+        anti_loop_counter = 0
         
         #E(t) is all the errors. Multiply the errors with the PID controller
         #error, integral error, derivative error
@@ -177,7 +72,7 @@ class robot:
         transform = np.array([[cos(self.record_movement[-1][2]), 0], 
                              [sin(self.record_movement[-1][2]), 0],
                              [0, 1]])
-        
+        self.world_map[int(self.x)][int(self.y)] = 1
 
     #Check for collision with obstacles
     def if_collide_with_landmark(self, x, y):
@@ -218,15 +113,30 @@ class robot:
     def __repr__(self):
         return 'Robot: [x=%.5f y=%.5f]' % (self.pos[0], self.pos[1])
 
-
     ###### Adding records of another robot to this one. #####
     def add_records(self,robot2):
         self.world_map = self.world_map + robot2.world_map
 
 
+####### END robot class #######
 
+<<<<<<< HEAD
 
 ####### END robot class #######
+
+
+
+####### Create its own map #######
+
+# This will help two things-
+# a) Easy to print out/ graph
+# b) Easy to add/store other records. Avoids unlimited records as well.
+
+# Since it's an np matrix, we can simply just add two 'maps' together, quickly.
+# the '+' sign is just a quick-hand 'or' operator.
+
+
+
 
 # ob = robot(100, 5, 6)
 # print(ob.record_movement[-1][0])
