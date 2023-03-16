@@ -24,6 +24,8 @@ class robot:
         self.pos = [world_size * random.random(),world_size * random.random(),0] #position [x,y,theta] , Made purely so computer can access easier
         self.record_movement = [[self.pos[0], self.pos[1], self.pos[2]]] #record_movement[x,y,theta]
         self.world_map = np.zeros((int(world_size), int(world_size)), int)
+        self.behind = None
+        self.behind_angle = None
         
     #Limit the angular orientation between 0 < theta < pi
     def lim_angle(angle):
@@ -35,19 +37,29 @@ class robot:
             
     #Movement Algorithm
     def move(self):
+        '''
+        Current Heiarchy of Movement
+        1) Avoid Collision
+        2) if behind another robot
         
-        np_follower_array = np.array(self.pos)
-        transform = np.array([[cos(self.pos[2]), 0], 
+        Add the pheromone contribution
+        '''
+        
+        #Check if behind, if so, set the velocity
+        if behind:
+            follower_pos(self.behind, self.behind_angle)
+        else: 
+            transform = np.array([[cos(self.pos[2]), 0], 
                              [sin(self.pos[2]), 0],
                              [0, 1]])
-        anti_stuck_loop = 0
-        ####Add Collision Avoidance########
-        new_pos = np_follower_array +  np.matmul(transform, self.vel)
         
-        if is_behind:
-            ##########Put movement algorithm in#########
-            new_pos = np_follower_array +  np.matmul(transform, self.vel)
-                #Check for collision of landmarks or boundaries
+        
+        #Initialize new position
+        np_follower_array = np.array(self.pos)
+        new_pos = np_follower_array +  np.matmul(transform, self.vel)
+        anti_stuck_loop = 0
+            
+        #Collision Avoidance
         while self.if_collide_with_landmark(new_pos[0],new_pos[1]) or new_pos[0] < 0.0 or new_pos[0] > self.world_size or new_pos[1] < 0.0 or new_pos[1] > self.world_size:          
             #Increase angular velocity to turn
             self.vel[1] += 0.5 # 
@@ -76,16 +88,17 @@ class robot:
         #Add position to its local map
         self.world_map[int(self.pos[0])][int(self.pos[1])] = 1
 
-    def is_behind(self, robot2, detection_angle)
+    def is_behind(self, robot2, detection_angle):
         #make detection 
         angle = atan2(self.pos[1]-self.pos[1], self.pos[0] - self.pos[0])
         correct_lower = self.pos[2] - detection_angle/2
         correct_upper = self.pos[2] + detection_angle/2
         dist = sqrt((self.pos[1]-self.pos[1])**2 + (self.pos[0] - self.pos[0])**2)
         if angle > correct_lower and angle < correct_upper and dist < self.measurement_range:
-            return True
+            self.behind = robot2
+            self.behind_angle = detection_angle
         else:
-            return False
+            self.behind = None
    
     #Determine whether follower will be on the left or right
     def wing_pos(self, leader):
