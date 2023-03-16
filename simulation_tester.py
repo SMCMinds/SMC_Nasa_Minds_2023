@@ -48,7 +48,7 @@ measurement_range = 5.0     # range at which we can sense landmarks
 
 #Initiate robot class
 landmarks = make_landmarks(num_landmarks)
-num_of_robots = 1
+num_of_robots = 3
 robot_list = []
 for i in range(num_of_robots):
     robot_list.append(robot(world_size, measurement_range, landmarks))

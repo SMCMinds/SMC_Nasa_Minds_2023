@@ -71,21 +71,12 @@ for i in range(num_of_robots):
 
 time_steps = 100
 
-#prints all the coordinates that the robot makes
-def print_positions(poses):
-    print('\n')
-    print('Estimated Poses:')
-    print('['+ str(poses[0]) + ', ' + str(poses[1]) + ']')
-    print('\n')
-    i+=1
-
-
-#2D Array of empty world
+#Create sets of 2D Array of empty world
+#Last World is over all
 world = np.zeros((int(world_size), int(world_size)))
 
 #Graph Landmarks, get rid of it after testing period
-b = [[particle[0] for particle in landmarks], [
-            particle[1] for particle in landmarks]]
+b = [[particle[0] for particle in landmarks], [particle[1] for particle in landmarks]]
 for i in range(len(b[0])):
         world[int(b[0][i])][int(b[1][i])]=50
 
@@ -103,23 +94,14 @@ while num_of_graphs > graph_spaces:
 fig, axes = plt.subplots(vertical_graph_stack,horizontal_graph_stack)
 
 
-
-
-#get graph color
-def get_cmap(n, name='hsv'):
-    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
-    RGB color; the keyword argument name must be a standard mpl colormap name.'''
-    return plt.cm.get_cmap(name, n)
-
-
 ################### Neighbour-search ##########################
 
 def neighbour(robot1, robot2, area_size):
 
-    a = robot1.x
-    b = robot1.y
-    c = robot2.x
-    d = robot2.y
+    a = robot1.pos[0]
+    b = robot1.pos[1]
+    c = robot2.pos[0]
+    d = robot2.pos[1]
 
     if ((a < (c + area_size)) and (a > (c - area_size))) and (
     (b < (d + area_size)) and (b > (d - area_size))):
@@ -138,17 +120,6 @@ def animate(data):
         robot_list[index].detect_landmarks()
         robot_list[index].move()
         
-        """a = [[particle[0] for particle in robot_list[index].record_movement], [
-            particle[1] for particle in robot_list[index].record_movement]]
-        for i in range(len(a[0])):
-                world[int(a[0][i])][int(a[1][i])]=100
-                empty_world[int(a[0][i])][int(a[1][i])]=100
-        b = [[particle[0] for particle in robot_list[index].landmarks], [
-                particle[1] for particle in robot_list[index].landmarks]]
-        for i in range(len(b[0])):
-                world[int(b[0][i])][int(b[1][i])]=50
-                empty_world[int(b[0][i])][int(b[1][i])]=50"""
-
         for index2 in range(len(robot_list)):
             if (neighbour(robot_list[index], robot_list[index2], 20)):
                 robot_list[index].add_records(robot_list[index2])
@@ -160,7 +131,7 @@ def animate(data):
         #If want different colormap, add cmap in this parameters
         fig.axes[index].matshow(empty_world)
 
-        world += empty_world
+        world = np.maximum(world, empty_world)
             
     fig.axes[-2].clear()
     fig.axes[-2].matshow(world)
@@ -179,3 +150,13 @@ ani = animation.FuncAnimation(fig, animate, frames = 500, interval=1)
 # ani.save('orbita.gif', writer='Pillow', fps=30)
 plt.show()
 
+
+
+
+#prints all the coordinates that the robot makes
+def print_positions(poses):
+    print('\n')
+    print('Estimated Poses:')
+    print('['+ str(poses[0]) + ', ' + str(poses[1]) + ']')
+    print('\n')
+    i+=1
