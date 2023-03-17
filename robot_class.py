@@ -48,6 +48,7 @@ class robot:
         #Check if behind, if so, set the velocity
         if self.behind:
             self.follower_pos(self.behind, self.behind_angle)
+        
         transform = np.array([[cos(self.pos[2]), 0], 
                             [sin(self.pos[2]), 0],
                             [0, 1]])
@@ -80,12 +81,13 @@ class robot:
 
         #Convert position to Python list    
         self.pos = new_pos.tolist()
+        self.lim_angle(self.pos[2])
         
         #Safe to the record
         self.record_movement.append(self.pos)
         
         #Add position to its local map
-        self.world_map[int(self.pos[0])][int(self.pos[1])] = 1
+        self.world_map[int(self.pos[0])][int(self.pos[1])] = 100
 
     def is_behind(self, robot2, detection_angle):
         #make detection 
@@ -158,57 +160,64 @@ class robot:
         angle_spacing = pi/4
         if left_or_right == 1: #right wing
             angle_of_following = leading_theta - pi/2 - angle_spacing
-            return -1*spacing*cos(angle_of_following), spacing*sin(angle_of_following)
-        if left_or_right == 2:
+            x = -1*spacing*cos(angle_of_following)
+            y = spacing*sin(angle_of_following)
+        elif left_or_right == 2:
             angle_of_following = leading_theta + pi/2 + angle_spacing
-            return spacing*cos(angle_of_following), spacing*sin(angle_of_following)
+            x = spacing*cos(angle_of_following)
+            y = spacing*sin(angle_of_following)
         else:
-            print('goal position error')
-            return 0, 0
+            return -99, -99
+        if self.pos[0] + x < 0 or self.pos[1] + y < 0:
+            return -99,-99
+        else: return x,y
 
 
     #Use goal coordinates to navigate the follower robot 
-    def follower_pos(self, leader, wing_pos):
+    def follower_pos(self, leader, wing_pos, dt = 0.5):
         goal_x, goal_y = self.goal_position(5,leader)
+        if goal_x == -99 and goal_y == -99:
+            return 
         goal_theta = leader.record_movement[-1][2]
         np_follower_array = np.array(self.pos)
+        
+        #Error absolute reference frame
         error_frame = np.array([goal_x - self.record_movement[-1][0], goal_y - self.record_movement[-1][1],
                        goal_theta - self.record_movement[-1][2]])
-        follower_heading_error = lambda x: np.matmul([[cos(self.record_movement[x][2]), sin(self.record_movement[x][2]), 0],
+        
+        #Error from follower reference frame
+        follower_heading_error = lambda x: np.matmul(np.array([[cos(self.record_movement[x][2]), sin(self.record_movement[x][2]), 0],
                                                     [-sin(self.record_movement[x][2]), cos(self.record_movement[x][2]), 0],
-                                                    [0, 0, 1]],
+                                                    [0, 0, 1]]).transpose(),
                                                     error_frame)
         
-        #E(t) is all the errors. Multiply the errors with the PID controller
-        #error, integral error, derivative error
-        #time based pid
-        '''E_t = lambda x: [follower_heading_error[x], following_heading_error[x]*dt, following_heading_error[x]/dt]
-            H_t = np.array[[E_t[0], 0, 0],
-                [0, E_t[1], follower_heading_error[2]]]'''
+        E_t = lambda x: [follower_heading_error[x], following_heading_error[x]*dt, following_heading_error[x]/dt]
+            #E(t) is all the errors. Multiply the errors with the PID controller
+            #error, integral error, derivative error
+            #time based pid
+        H_t = np.array[[E_t(0), 0, 0],
+                [0, E_t(1), E_t(2)]]
+            
+        '''
+            #######Change it ############
+            if len(self.record_movement) < 3:
+                E_k = lambda x: [follower_heading_error(-1)[x], 
+                            follower_heading_error(-1)[x],
+                            follower_heading_error(-1)[x]]
+            else:
+                E_k = lambda x: [follower_heading_error(-1)[x] - follower_heading_error(-2)[x], 
+                            follower_heading_error(-1)[x],
+                            follower_heading_error(-1)[x] - 2*follower_heading_error(-2)[x] + follower_heading_error(-3)[x]]
+            ##################################################################
 
-        #######Might Have an Error from the lack of array size############
-        if len(self.record_movement) < 3:
-            E_k = lambda x: [follower_heading_error(-1)[x], 
-                         follower_heading_error(-1)[x],
-                         follower_heading_error(-1)[x]]
-        else:
-            E_k = lambda x: [follower_heading_error(-1)[x] - follower_heading_error(-2)[x], 
-                         follower_heading_error(-1)[x],
-                         follower_heading_error(-1)[x] - 2*follower_heading_error(-2)[x] + follower_heading_error(-3)[x]]
-        ##################################################################
-            ###E_k is a list
-        H_k = np.array([[E_k(0)[0], 0, 0],
-                [0, E_k(1)[1], E_k(2)[2]]])
-        print(H_k)
+            H_k = np.array([[E_k(0)[0], 0, 0],
+                    [0, E_k(1)[1], E_k(2)[2]]])'''
+        
         #Ki, Kp, Kd
-        K_e = np.array([1,10,0.001])
+        K_e = np.array([.5,.5,0.1])
         #[[v],[w]]
-        vel = np.dot(K_e, H_k.transpose())
-        print(vel)
-        self.vel += vel
-        transform = np.array([[cos(self.record_movement[-1][2]), 0], 
-                             [sin(self.record_movement[-1][2]), 0],
-                             [0, 1]])
+        self.vel = 0.1 * np.dot(K_e, H_t.transpose())
+        return 
         
      
 

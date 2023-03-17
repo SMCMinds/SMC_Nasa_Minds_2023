@@ -9,7 +9,7 @@ import time
 
 # world parameters
 landmarks = []
-num_landmarks = 6
+num_landmarks = 0
 running = True
 world_size = 100.0    # size of world (square)
 
