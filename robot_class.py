@@ -47,7 +47,25 @@ class robot:
         
         #Check if behind, if so, set the velocity
         if self.behind:
-            self.follower_pos(self.behind, self.behind_angle)
+            x, y = self.goal_position(5, self.behind_angle, self.behind)
+            self.pos[0] = x
+            self.pos[1] = y
+            self.pos[2] = self.behind.pos[2]
+            
+                    #Safe to the record
+            self.record_movement.append(self.pos)
+            
+            #Add position to its local map
+            self.world_map[int(self.pos[0])][int(self.pos[1])] = 100
+            
+            return
+
+            
+        
+        #check Simplified
+        # if self.behind:
+        #     self.follower_pos(self.behind)
+        
         
         transform = np.array([[cos(self.pos[2]), 0], 
                             [sin(self.pos[2]), 0],
@@ -76,8 +94,9 @@ class robot:
             if anti_stuck_loop == 10:
                 self.vel[0] += 2
 
-        #After position validated, reset angular velocity to 0
-        self.vel[1] = 0
+        #After position validated, make angular velocity to go 0
+        
+        self.vel[1] = 0 
 
         #Convert position to Python list    
         self.pos = new_pos.tolist()
@@ -89,18 +108,21 @@ class robot:
         #Add position to its local map
         self.world_map[int(self.pos[0])][int(self.pos[1])] = 100
 
-    def is_behind(self, robot2, detection_angle):
+    def is_behind(self, robot2, detection_angle = pi/3):
         #make detection 
-        angle = atan2(self.pos[1]-self.pos[1], self.pos[0] - self.pos[0])
-        correct_lower = self.pos[2] - detection_angle/2
-        correct_upper = self.pos[2] + detection_angle/2
-        dist = sqrt((self.pos[1]-self.pos[1])**2 + (self.pos[0] - self.pos[0])**2)
-        if angle > correct_lower and angle < correct_upper and dist < self.measurement_range:
-            self.behind = robot2
-            self.behind_angle = detection_angle
+        angle = atan2(robot2.pos[1]-self.pos[1], robot2.pos[0] - self.pos[0])
+        angle = self.lim_angle(angle)
+        correct_lower = self.pos[2] - detection_angle
+        correct_upper = self.pos[2] + detection_angle
+        dist = sqrt((robot2.pos[1]-self.pos[1])**2 + (robot2.pos[0] - self.pos[0])**2)
+        if (angle > correct_lower) and (angle < correct_upper) and (dist < self.measurement_range * 3): #detects at max measurement range
+                    self.behind = robot2
+                    self.behind_angle = detection_angle
+                    return True
         else:
             self.behind = None
-   
+            return False
+  
     #Determine whether follower will be on the left or right
     def wing_pos(self, leader):
         #Ensure this function is only called when leader is ahead
@@ -129,7 +151,7 @@ class robot:
                 pos_theta = pi + atan2(dist_y,dist_x)
                 if pos_theta > leading_theta:
                     return 1
-                else: return 2       
+            else: return 2       
         elif leading_theta < 3*pi/2:
             if dist_x > 0 and dist_y > 0: #Q1
                 pos_theta = pi + atan2(dist_y,dist_x)
@@ -154,28 +176,28 @@ class robot:
         return 0
 
     #Return the goal coordinates                    
-    def goal_position(self,spacing, leader):
+    def goal_position(self,spacing, angle_spacing, leader):
+        
         left_or_right = self.wing_pos(leader)
         leading_theta = self.lim_angle(leader.record_movement[-1][2])
-        angle_spacing = pi/4
         if left_or_right == 1: #right wing
-            angle_of_following = leading_theta - pi/2 - angle_spacing
-            x = -1*spacing*cos(angle_of_following)
+            angle_of_following = leading_theta - pi + angle_spacing
+            x = spacing*cos(angle_of_following)
             y = spacing*sin(angle_of_following)
         elif left_or_right == 2:
-            angle_of_following = leading_theta + pi/2 + angle_spacing
+            angle_of_following = leading_theta - pi - angle_spacing
             x = spacing*cos(angle_of_following)
             y = spacing*sin(angle_of_following)
         else:
             return -99, -99
         if self.pos[0] + x < 0 or self.pos[1] + y < 0:
             return -99,-99
-        else: return x,y
+        else: return self.pos[0] + x, self.pos[1] + y
 
 
     #Use goal coordinates to navigate the follower robot 
-    def follower_pos(self, leader, wing_pos, dt = 0.5):
-        goal_x, goal_y = self.goal_position(5,leader)
+    def follower_pos(self, leader, dt = 0.5):
+        goal_x, goal_y = self.goal_position(5, self.behind_angle, leader)
         if goal_x == -99 and goal_y == -99:
             return 
         goal_theta = leader.record_movement[-1][2]
@@ -191,12 +213,12 @@ class robot:
                                                     [0, 0, 1]]).transpose(),
                                                     error_frame)
         
-        E_t = lambda x: [follower_heading_error[x], following_heading_error[x]*dt, following_heading_error[x]/dt]
+        E_t = lambda x: [follower_heading_error(-1)[x], follower_heading_error(-1)[x]*dt, follower_heading_error(-1)[x]/dt]
             #E(t) is all the errors. Multiply the errors with the PID controller
             #error, integral error, derivative error
             #time based pid
-        H_t = np.array[[E_t(0), 0, 0],
-                [0, E_t(1), E_t(2)]]
+        H_t = np.array([[E_t(0)[0], 0, 0],
+                [0, E_t(1)[1], E_t(2)[2]]])
             
         '''
             #######Change it ############
@@ -217,7 +239,6 @@ class robot:
         K_e = np.array([.5,.5,0.1])
         #[[v],[w]]
         self.vel = 0.1 * np.dot(K_e, H_t.transpose())
-        return 
         
      
 

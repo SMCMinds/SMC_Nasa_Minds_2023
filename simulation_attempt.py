@@ -114,12 +114,11 @@ def animate(data):
     
     world = np.zeros((int(world_size), int(world_size)))
     for index in range(len(robot_list)):
-        
         #Share Map when close and check if it is behind another
         for index2 in range(len(robot_list)):
             if index != index2:
-                robot_list[index].is_behind(robot_list[index2], pi/3)
                 if (neighbour(robot_list[index], robot_list[index2], 20)):
+                    robot_list[index].is_behind(robot_list[index2], pi/3)
                     robot_list[index].add_records(robot_list[index2])
                     robot_list[index2].add_records(robot_list[index])
         
