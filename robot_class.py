@@ -8,21 +8,17 @@ import numpy as np
 #
 class robot:
 
-    # --------
-    # init:
-    #   creates a robot with the specified parameters and initializes
-    #   the location (self.x, self.y) to the center of the world
-    #
-    # world_landmarks only for this simulation
+    
     def __init__(self, world_size=100.0, measurement_range=30.0, world_landmarks=0):
         self.world_size = world_size
         self.measurement_range = measurement_range
         self.landmarks = []  # landmarks[x][y] seen by rover
         self.world_landmarks = world_landmarks
         self.distance = 1.0  # The size of the step that the robot takes
-        self.vel = np.array([2.0,0.0]) # [velocity, angular velocity]
+        self.vel = np.array([1.0,0.0]) # [velocity, angular velocity]
         self.pos = [world_size * random.random(),world_size * random.random(),0] #position [x,y,theta] , Made purely so computer can access easier
         self.record_movement = [[self.pos[0], self.pos[1], self.pos[2]]] #record_movement[x,y,theta]
+        self.record_error = [[0,0,0]]
         self.world_map = np.zeros((int(world_size), int(world_size)), int)
         self.behind = None
         self.behind_angle = None
@@ -58,19 +54,20 @@ class robot:
             #Add position to its local map
             self.world_map[int(self.pos[0])][int(self.pos[1])] = 100
             
-            return
-
-            
+        #     return
         
         #check Simplified
         # if self.behind:
         #     self.follower_pos(self.behind)
         
         
-        transform = np.array([[cos(self.pos[2]), 0], 
+        transform = np.array([[cos(self.pos[2]) , 0], 
                             [sin(self.pos[2]), 0],
                             [0, 1]])
         
+        #Ensure the velocity falls within a certain range
+        if self.vel[0] > 2:
+            self.vel[0] = 2
         
         #Initialize new position
         np_follower_array = np.array(self.pos)
@@ -115,7 +112,7 @@ class robot:
         correct_lower = self.pos[2] - detection_angle
         correct_upper = self.pos[2] + detection_angle
         dist = sqrt((robot2.pos[1]-self.pos[1])**2 + (robot2.pos[0] - self.pos[0])**2)
-        if (angle > correct_lower) and (angle < correct_upper) and (dist < self.measurement_range * 3): #detects at max measurement range
+        if (angle > correct_lower) and (angle < correct_upper) and (dist < self.measurement_range * 4): #detects at max measurement range
                     self.behind = robot2
                     self.behind_angle = detection_angle
                     return True
@@ -131,7 +128,7 @@ class robot:
         #2 for left
         dist_x = leader.pos[0] - self.pos[0] #x
         dist_y = leader.pos[1] - self.pos[1] #y
-        leading_theta = self.lim_angle(leader.record_movement[-1][2])
+        leading_theta = self.lim_angle(leader.pos[2])
         if leading_theta < pi/2:
             if dist_x < 0 and dist_y < 0: #Q3
                 pos_theta = abs(atan2(dist_y,dist_x))
@@ -179,7 +176,7 @@ class robot:
     def goal_position(self,spacing, angle_spacing, leader):
         
         left_or_right = self.wing_pos(leader)
-        leading_theta = self.lim_angle(leader.record_movement[-1][2])
+        leading_theta = self.lim_angle(leader.pos[2])
         if left_or_right == 1: #right wing
             angle_of_following = leading_theta - pi + angle_spacing
             x = spacing*cos(angle_of_following)
@@ -196,49 +193,52 @@ class robot:
 
 
     #Use goal coordinates to navigate the follower robot 
-    def follower_pos(self, leader, dt = 0.5):
+    def follower_pos(self, leader):
         goal_x, goal_y = self.goal_position(5, self.behind_angle, leader)
         if goal_x == -99 and goal_y == -99:
             return 
-        goal_theta = leader.record_movement[-1][2]
+        goal_theta = leader.pos[2]
         np_follower_array = np.array(self.pos)
         
         #Error absolute reference frame
-        error_frame = np.array([goal_x - self.record_movement[-1][0], goal_y - self.record_movement[-1][1],
-                       goal_theta - self.record_movement[-1][2]])
+        error_frame = np.array([goal_x - self.pos[0], goal_y - self.pos[1],
+                       goal_theta - self.pos[2]])
         
         #Error from follower reference frame
-        follower_heading_error = lambda x: np.matmul(np.array([[cos(self.record_movement[x][2]), sin(self.record_movement[x][2]), 0],
-                                                    [-sin(self.record_movement[x][2]), cos(self.record_movement[x][2]), 0],
-                                                    [0, 0, 1]]).transpose(),
+        follower_error = np.matmul(np.array([[cos(self.pos[2]), sin(self.pos[2]), 0],
+                                                    [-sin(self.pos[2]), cos(self.pos[2]), 0],
+                                                    [0, 0, 1]]),
                                                     error_frame)
         
-        E_t = lambda x: [follower_heading_error(-1)[x], follower_heading_error(-1)[x]*dt, follower_heading_error(-1)[x]/dt]
-            #E(t) is all the errors. Multiply the errors with the PID controller
-            #error, integral error, derivative error
-            #time based pid
-        H_t = np.array([[E_t(0)[0], 0, 0],
-                [0, E_t(1)[1], E_t(2)[2]]])
-            
-        '''
-            #######Change it ############
-            if len(self.record_movement) < 3:
-                E_k = lambda x: [follower_heading_error(-1)[x], 
-                            follower_heading_error(-1)[x],
-                            follower_heading_error(-1)[x]]
-            else:
-                E_k = lambda x: [follower_heading_error(-1)[x] - follower_heading_error(-2)[x], 
-                            follower_heading_error(-1)[x],
-                            follower_heading_error(-1)[x] - 2*follower_heading_error(-2)[x] + follower_heading_error(-3)[x]]
-            ##################################################################
-
-            H_k = np.array([[E_k(0)[0], 0, 0],
-                    [0, E_k(1)[1], E_k(2)[2]]])'''
+        #Make a record of the errors
+        self.record_error.append(follower_error.tolist())
         
+        '''
+            E_t = lambda x: [self.record_error[x], self.record_error[x]*dt, self.record_error[x]/dt]
+                #E(t) is all the errors. Multiply the errors with the PID controller
+                #error, integral error, derivative error
+                #time based pid
+            H_t = np.array([[E_t(0)[0], 0, 0],
+                [0, E_t(1)[1], E_t(2)[2]]])
+                 self.vel += 0.1 * np.dot(K_e, H_t.transpose())
+            '''
+        
+        #######Change it ############
+        if len(self.record_error) < 3:
+            E_k = [self.record_error[-1][0], self.record_error[-1][1], self.record_error[-1][2]]
+        else:
+            E_k = [self.record_error[-1][0] - self.record_error[-2][0], 
+                   self.record_error[-1][1],
+                   self.record_error[-1][2] - 2*self.record_error[-2][2] + self.record_error[-3][2]]
+        ##################################################################
         #Ki, Kp, Kd
-        K_e = np.array([.5,.5,0.1])
+        K_e = np.array([3,2.5,0.02])
+        K_pid = K_e * E_k
+        H_k = np.array([[E_k[0], 0, 0],
+                [0, E_k[1], E_k[2]]])
+        
         #[[v],[w]]
-        self.vel = 0.1 * np.dot(K_e, H_t.transpose())
+        self.vel = np.dot(K_e, H_k.transpose())
         
      
 
@@ -261,7 +261,7 @@ class robot:
         for i in range(len(obstacles)):
             if obstacles[i][0] < self.measurement_range or obstacles[i][1] < self.measurement_range:  # Left off here
                 self.landmarks.append(
-                    [self.record_movement[-1][0] + obstacles[i][0], self.record_movement[-1][1] + obstacles[i][1]])
+                    [self.pos[0] + obstacles[i][0], self.pos[1] + obstacles[i][1]])
 ##############CHANGE###############
 
     def simulate_sense(self):
@@ -304,4 +304,4 @@ class robot:
 
 
 # ob = robot(100, 5, 6)
-# print(ob.record_movement[-1][0])
+# print(ob.pos[0])

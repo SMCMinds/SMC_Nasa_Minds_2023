@@ -25,6 +25,7 @@ class TestRobot(unittest.TestCase):
         r_list = []
         for i in range(3):
             r_list.append(robot())
+        angle = pi/3
         #Does the angle behind work?
         #The detection distance is maxed by the measurement range
         def x_axis_test():
@@ -44,14 +45,14 @@ class TestRobot(unittest.TestCase):
             self.assertFalse(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} not supposed to be behind robot {r_list[1]}')
             
             #r2 is in front of r2
-            r_list[1].pos = [55, 53, 0] #slightly above range
+            r_list[1].pos = [55, 50 + 5 * sin(angle) + 1, 0] #slightly above range
             self.assertFalse(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} not supposed to detect {r_list[1]}')
-            r_list[1].pos = [55, 52, 0] # on edge of range
+            r_list[1].pos = [55, 50 + 5* sin(angle) - 1, 0] # on edge of range
             self.assertTrue(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} is supposed to detect {r_list[1]}')
             
-            r_list[1].pos = [55, 47, 0] #below range
+            r_list[1].pos = [55, 50 - 5 * sin(angle) - 1, 0] #below range
             self.assertFalse(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} not supposed to detect {r_list[1]}')      
-            r_list[1].pos = [55, 48, 0] #lower edge in range
+            r_list[1].pos = [55, 50 - 5 * sin(angle) + 1, 0] #lower edge in range
             self.assertTrue(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} is supposed to detect {r_list[1]}')     
             
             r_list[1].pos = [81, 50, 0] #outside detection range to the right
@@ -104,13 +105,17 @@ class TestRobot(unittest.TestCase):
         y_axis_test()
         q1_test()
             
+    
+    def follower_pos(self):
+        
+        
+        pass
 
             
 
     def move(self):
         pass
-    def follower_pos(self):
-        pass
+    
     
     def goal_position(self):
         pass
