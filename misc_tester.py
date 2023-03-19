@@ -7,4 +7,4 @@ b = np.array([1,2,3])
 
 
 print(a * b)
-print(a)
+print(np.array([1,1]) + np.array([2,3]))

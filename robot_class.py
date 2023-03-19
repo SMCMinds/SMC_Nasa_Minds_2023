@@ -15,8 +15,9 @@ class robot:
         self.landmarks = []  # landmarks[x][y] seen by rover
         self.world_landmarks = world_landmarks
         self.distance = 1.0  # The size of the step that the robot takes
-        self.vel = np.array([1.0,0.0]) # [velocity, angular velocity]
-        self.pos = [world_size * random.random(),world_size * random.random(),0] #position [x,y,theta] , Made purely so computer can access easier
+        
+        self.pos = [world_size * random.random() - 1 ,world_size * random.random()-1, 2 * pi * random.random()] #position [x,y,theta] , Made purely so computer can access easier
+        self.vel = np.array([cos(self.pos[2]),sin(self.pos[2])]) # [dx,dy]
         self.record_movement = [[self.pos[0], self.pos[1], self.pos[2]]] #record_movement[x,y,theta]
         self.record_error = [[0,0,0]]
         self.world_map = np.zeros((int(world_size), int(world_size)), int)
@@ -25,97 +26,137 @@ class robot:
         
     #Limit the angular orientation between 0 < theta < pi
     def lim_angle(self, angle):
-        while angle < 0:
-           angle += 2*pi
-        while angle > (2*pi):
-           angle -= 2*pi
-        return angle
+        if angle < 0:
+            return angle + 2*pi
+        elif angle > 2 * pi:
+            return angle - 2*pi
+        else: 
+            return angle
+    
+    
+    def actual_angle(self, x, y, angle):
+        if angle > 0: #Q1 or Q4
+            if x>0 and y>0:
+                return angle
+            else:
+                return angle + pi
+        elif angle < 0:
+            if x<0 and y>0:
+                return pi - angle
+            else:
+                return angle + 2 * pi
+
+    def avoidance(self, x,y,angle):
+        
+        new_x = x + self.vel[0]
+        new_y = y + self.vel[1]
+        
+        if not self.if_collide_with_landmark(new_x, new_y) and new_x > 1.0 and new_x < self.world_size - 1 and new_y > 1.0 and new_y < self.world_size - 1: 
+            return [new_x,new_y,angle]
+
+        #Left turn
+        left_turn = angle + 0.01
+        left_vel = np.array([2*cos(left_turn), 2*sin(left_turn)])
+        left_pos = np.array([x,y]) + left_vel
+        while self.if_collide_with_landmark(left_pos[0],left_pos[1]) or left_pos[0] < 1.0 or left_pos[0] > self.world_size - 1 or left_pos[1] < 1.0 or left_pos[1] > self.world_size - 1:
+            left_turn = self.lim_angle(left_turn)
+            left_turn = left_turn + 0.1
+            left_vel = np.array([2*cos(left_turn), 2*sin(left_turn)])
+            left_pos = np.array([x,y]) + left_vel
+            if abs(left_turn) > 2*pi :
+                left_turn = self.lim_angle(left_turn)
+                left_vel *= 2
             
+        #Right Turn
+        right_turn = angle - 0.01
+        right_vel = np.array([cos(right_turn), sin(right_turn)])
+        right_pos = np.array([x,y]) + right_vel
+        while self.if_collide_with_landmark(right_pos[0],right_pos[1]) or right_pos[0] < 1.0 or right_pos[0] > self.world_size - 1 or right_pos[1] < 1.0 or right_pos[1] > self.world_size - 1:              
+            right_turn = right_turn - 0.1
+            right_vel = np.array([cos(right_turn), sin(right_turn)])
+            right_pos = np.array([x,y]) + right_vel
+            if abs(right_turn) > 2*pi:
+                right_turn = self.lim_angle(right_turn)
+                right_vel *= 2
+            
+        left_pos = left_pos.tolist()
+
+        right_pos = right_pos.tolist()
+        
+        
+        if abs(left_turn - angle) <= abs(right_turn - angle):
+            self.vel = left_vel
+            final =  [left_pos[0], left_pos[1], left_turn]
+            return final
+        else:
+            self.vel = right_vel
+            final = [right_pos[0],right_pos[1],right_turn]
+            return final
+        
+         
+       
     #Movement Algorithm
     def move(self):
         '''
-        Current Heiarchy of Movement
-        1) Avoid Collision
-        2) if behind another robot
-        
-        Add the pheromone contribution
+            Current Heiarchy of Movement
+            1) Avoid Collision
+            2) if behind another robot
+            
+            Add the pheromone contribution
+            #Check if behind, if so, set the velocity
+            # if self.behind:
+            #     x, y = self.goal_position(5, self.behind_angle, self.behind)
+            #     self.pos[0] = x
+            #     self.pos[1] = y
+            #     self.pos[2] = self.behind.pos[2]
+                
+            #             #Safe to the record
+            #     self.record_movement.append(self.pos)
+                
+            #     #Add position to its local map
+            #     self.world_map[int(self.pos[0])][int(self.pos[1])] = 100
+                
+            #     return
+            
+            #check Simplified
         '''
         
-        #Check if behind, if so, set the velocity
-        if self.behind:
-            x, y = self.goal_position(5, self.behind_angle, self.behind)
-            self.pos[0] = x
-            self.pos[1] = y
-            self.pos[2] = self.behind.pos[2]
-            
-                    #Safe to the record
-            self.record_movement.append(self.pos)
-            
-            #Add position to its local map
-            self.world_map[int(self.pos[0])][int(self.pos[1])] = 100
-            
-        #     return
-        
-        #check Simplified
         # if self.behind:
         #     self.follower_pos(self.behind)
         
-        
-        transform = np.array([[cos(self.pos[2]) , 0], 
-                            [sin(self.pos[2]), 0],
-                            [0, 1]])
-        
-        #Ensure the velocity falls within a certain range
-        if self.vel[0] > 2:
-            self.vel[0] = 2
-        
+        angle = self.pos[2]
+        new_pos = [0,0,0]
         #Initialize new position
-        np_follower_array = np.array(self.pos)
-        new_pos = np_follower_array +  np.matmul(transform, self.vel)
-        anti_stuck_loop = 0
+        #np_follower_array = np.array(self.pos)
+        new_pos[0] = self.pos[0] +  self.vel[0]
+        new_pos[1] = self.pos[1] +  self.vel[1]
+        new_pos[2] = self.pos[2]
             
         #Collision Avoidance
-        while self.if_collide_with_landmark(new_pos[0],new_pos[1]) or new_pos[0] < 0.0 or new_pos[0] > self.world_size or new_pos[1] < 0.0 or new_pos[1] > self.world_size:          
-            #Increase angular velocity to turn
-            self.vel[1] += 0.5 # 
-
-            #Change the transform in correlation with the angular change
-            transform = np.array([[cos(new_pos[2]), 0], 
-                             [sin(new_pos[2]), 0],
-                             [0, 1]])
-            #Make new position
-            new_pos = np_follower_array +  np.matmul(transform, self.vel)
-
-            #In case of infinite loop, increase the step size
-            anti_stuck_loop += 1
-            if anti_stuck_loop == 10:
-                self.vel[0] += 2
-
-        #After position validated, make angular velocity to go 0
-        
-        self.vel[1] = 0 
-
-        #Convert position to Python list    
-        self.pos = new_pos.tolist()
-        self.lim_angle(self.pos[2])
+        new_pos = self.avoidance(new_pos[0],new_pos[1],new_pos[2])
         
         #Safe to the record
-        self.record_movement.append(self.pos)
+        self.pos = new_pos
+        self.record_movement.append(new_pos)
         
         #Add position to its local map
         self.world_map[int(self.pos[0])][int(self.pos[1])] = 100
 
+
+
     def is_behind(self, robot2, detection_angle = pi/3):
         #make detection 
-        angle = atan2(robot2.pos[1]-self.pos[1], robot2.pos[0] - self.pos[0])
-        angle = self.lim_angle(angle)
-        correct_lower = self.pos[2] - detection_angle
-        correct_upper = self.pos[2] + detection_angle
+        angle = self.actual_angle(self.pos[0],self.pos[1], atan2(robot2.pos[1]-self.pos[1], robot2.pos[0] - self.pos[0])) 
+        follower_angle = self.actual_angle(self.pos[0], self.pos[1], self.pos[2]) 
+        
+        correct_lower = follower_angle - detection_angle
+        correct_upper = follower_angle + detection_angle
+        
         dist = sqrt((robot2.pos[1]-self.pos[1])**2 + (robot2.pos[0] - self.pos[0])**2)
         if (angle > correct_lower) and (angle < correct_upper) and (dist < self.measurement_range * 4): #detects at max measurement range
-                    self.behind = robot2
-                    self.behind_angle = detection_angle
-                    return True
+            self.behind = robot2
+            self.behind_angle = angle
+            return True
         else:
             self.behind = None
             return False
@@ -128,7 +169,9 @@ class robot:
         #2 for left
         dist_x = leader.pos[0] - self.pos[0] #x
         dist_y = leader.pos[1] - self.pos[1] #y
-        leading_theta = self.lim_angle(leader.pos[2])
+        
+        angle = self.actual_angle(self.pos[0],self.pos[1], atan2(robot2.pos[1]-self.pos[1], robot2.pos[0] - self.pos[0])) 
+        leading_theta = leader.pos[2] 
         if leading_theta < pi/2:
             if dist_x < 0 and dist_y < 0: #Q3
                 pos_theta = abs(atan2(dist_y,dist_x))
@@ -176,7 +219,7 @@ class robot:
     def goal_position(self,spacing, angle_spacing, leader):
         
         left_or_right = self.wing_pos(leader)
-        leading_theta = self.lim_angle(leader.pos[2])
+        leading_theta = leader[2]
         if left_or_right == 1: #right wing
             angle_of_following = leading_theta - pi + angle_spacing
             x = spacing*cos(angle_of_following)
@@ -190,7 +233,6 @@ class robot:
         if self.pos[0] + x < 0 or self.pos[1] + y < 0:
             return -99,-99
         else: return self.pos[0] + x, self.pos[1] + y
-
 
     #Use goal coordinates to navigate the follower robot 
     def follower_pos(self, leader):
@@ -213,32 +255,20 @@ class robot:
         #Make a record of the errors
         self.record_error.append(follower_error.tolist())
         
-        '''
-            E_t = lambda x: [self.record_error[x], self.record_error[x]*dt, self.record_error[x]/dt]
-                #E(t) is all the errors. Multiply the errors with the PID controller
-                #error, integral error, derivative error
-                #time based pid
-            H_t = np.array([[E_t(0)[0], 0, 0],
-                [0, E_t(1)[1], E_t(2)[2]]])
-                 self.vel += 0.1 * np.dot(K_e, H_t.transpose())
-            '''
+        E_t = lambda x: [robot.record_error[-1][x], robot.record_error[-1][x]*dt, robot.record_error[-1][x]/dt]
         
-        #######Change it ############
-        if len(self.record_error) < 3:
-            E_k = [self.record_error[-1][0], self.record_error[-1][1], self.record_error[-1][2]]
-        else:
-            E_k = [self.record_error[-1][0] - self.record_error[-2][0], 
-                   self.record_error[-1][1],
-                   self.record_error[-1][2] - 2*self.record_error[-2][2] + self.record_error[-3][2]]
-        ##################################################################
-        #Ki, Kp, Kd
-        K_e = np.array([3,2.5,0.02])
-        K_pid = K_e * E_k
-        H_k = np.array([[E_k[0], 0, 0],
-                [0, E_k[1], E_k[2]]])
+        #Kp, Ki, Kd
+        #K_e = np.array([3,2.5,0.02])
+        K_e = np.array([0.1, 1, 0.001])
+        E_t_x = np.dot(E_k(0), K_e)
+        E_t_y = np.dot(E_k(1), K_e)
+        #K_pid = K_e * E_k
+        # H_k = np.array([[E_k[0], 0, 0],
+        #         [0, E_k[1], E_k[2]]])
         
         #[[v],[w]]
-        self.vel = np.dot(K_e, H_k.transpose())
+        self.vel[0] = E_t_x
+        self.vel[1] = E_t_y
         
      
 

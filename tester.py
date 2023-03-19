@@ -7,10 +7,12 @@ r1 = robot()
 r2 = robot()
 
 
-r1.pos = np.array([0,0,0])
-r2.pos = np.array([0,0,0])
+r1.pos = np.array([0,0, 0])
+r2.pos = np.array([0,0, 0])
+vel = [0,0]
 #K_e = np.array([3, 2.5, 0.02])
-K_e = np.array([1, 10, 0.01])
+#K_e = np.array([1, 10, 0.01])
+K_e = np.array([0.1, 1, 0.001])
 def lim_angle(angle):
     while angle < 0:
         angle += 2*pi
@@ -38,43 +40,145 @@ def follower_pos(robot, constant, dt = 0.5):
     #Make a record of the errors
     robot.record_error.append(follower_error.tolist())
     
-    #######Change it ############
-    if len(robot.record_error) < 3:
-        E_k = [robot.record_error[-1][0], robot.record_error[-1][1], robot.record_error[-1][2]]
-    else:
-        E_k = [robot.record_error[-1][0] - robot.record_error[-2][0], 
-                    robot.record_error[-1][1],
-                    robot.record_error[-1][2] - 2*robot.record_error[-2][2] + robot.record_error[-3][2]]
+    '''#######Change it ############
+        if len(robot.record_error) < 3:
+            E_k = [robot.record_error[-1][0], robot.record_error[-1][1], robot.record_error[-1][2]]
+        else:
+            E_k = [robot.record_error[-1][0] - robot.record_error[-2][0], 
+                        robot.record_error[-1][1],
+                        robot.record_error[-1][2] - 2*robot.record_error[-2][2] + robot.record_error[-3][2]]
 
-    H_k = np.array([[E_k[0], 0, 0],
-            [0, E_k[1], E_k[2]]])
+        H_k = np.array([[E_k[0], 0, 0],
+                [0, E_k[1], E_k[2]]])
+        K_pid = K_e * E_k
+        ##################################################################
 
-    K_pid = K_e * E_k
+        return 0.1 * np.dot(H_k, K_pid)
+        '''
+
+    #Ki,Kp,Kd
+    E_t = lambda x: [robot.record_error[-1][x], robot.record_error[-1][x] * dt, robot.record_error[-1][x]/dt]
+    
+    E_t_x = np.dot(constant, E_t(0))
+    E_t_y = np.dot(constant, E_t(1))
+    # E_t_x = np.dot(K_pid, E_t(0))
+    
+    # H_k = np.array([[E_k(0), 0, 0],
+    #         [0, E_k[1], E_k[2]]])
+    # K_pid = K_e * E_k
     ##################################################################
 
-    print(np.dot(H_k, K_pid))
-    return 0.1 * np.dot(K_pid, H_k.transpose())
+    return E_t_x, E_t_y
+    
+    
     
 i= 0
 while i < 100:
     vel1 = follower_pos(r1, K_e)
-    transform = np.array([[cos(r1.pos[2]), 0], 
-                        [sin(r1.pos[2]), 0],
-                        [0, 1]])
-    r1.pos = r1.pos +  np.matmul(transform, vel1)
-    r1.pos[2] = lim_angle(r1.pos[2])
-    vel2 = follower_pos(r1, K_e)
-    transform = np.array([[cos(r2.pos[2]), 0], 
-                        [sin(r2.pos[2]), 0],
-                        [0, 1]])
-    r2.pos = r2.pos +  np.matmul(transform, vel2)
-    r2.pos[2] = lim_angle(r2.pos[2])
+    vel2 = follower_pos(r2, K_e)
 
+    r1.pos[0] = r1.pos[0] + vel1[0]
+    r1.pos[1] += vel1[1]
+    #r1.pos[2] = lim_angle(r1.pos[2])
+    r2.pos[0] +=  vel1[0]
+    r2.pos[1] += vel1[1]
+
+    #r2.pos[2] = lim_angle(r2.pos[2])
+
+    print(r1.pos.tolist())
+    print(r2.pos.tolist())
     i+=1
 
-print(r1.pos.tolist())
-print(r2.pos.tolist())
 
+
+
+
+
+
+
+# r1.pos = np.array([0,0,0])
+# r2.pos = np.array([0,0,0])
+# #K_e = np.array([3, 2.5, 0.02])
+# #K_e = np.array([1, 10, 0.01])
+# K_e = np.array([1, 10, 0.01])
+# def lim_angle(angle):
+#     while angle < 0:
+#         angle += 2*pi
+#     while angle > (2*pi):
+#         angle -= 2*pi
+#     return angle
+        
+
+# def follower_pos(robot, constant, dt = 0.5):
+#     goal_x = 50
+#     goal_y = 50
+#     goal_theta = 0
+#     np_follower_array = np.array(robot.pos)
+    
+#     #Error absolute reference frame
+#     error_frame = np.array([goal_x - robot.pos[0], goal_y - robot.pos[1],
+#                     goal_theta - robot.pos[2]])
+    
+#     #Error from follower reference frame
+#     follower_error = np.matmul(np.array([[cos(robot.pos[2]), sin(robot.pos[2]), 0],
+#                                                 [-sin(robot.pos[2]), cos(robot.pos[2]), 0],
+#                                                 [0, 0, 1]]),
+#                                                 error_frame)
+    
+#     #Make a record of the errors
+#     robot.record_error.append(follower_error.tolist())
+    
+#     '''#######Change it ############
+#         if len(robot.record_error) < 3:
+#             E_k = [robot.record_error[-1][0], robot.record_error[-1][1], robot.record_error[-1][2]]
+#         else:
+#             E_k = [robot.record_error[-1][0] - robot.record_error[-2][0], 
+#                         robot.record_error[-1][1],
+#                         robot.record_error[-1][2] - 2*robot.record_error[-2][2] + robot.record_error[-3][2]]
+
+#         H_k = np.array([[E_k[0], 0, 0],
+#                 [0, E_k[1], E_k[2]]])
+#         K_pid = K_e * E_k
+#         ##################################################################
+
+#         return 0.1 * np.dot(H_k, K_pid)
+#         '''
+
+#     if len(robot.record_error) < 3:
+#     E_t = lambda x: [robot.record_error[-1][0], robot.record_error[-1][1], robot.record_error[-1][2]]
+#     else:
+#         E_k = [robot.record_error[-1][0] - robot.record_error[-2][0], 
+#                     robot.record_error[-1][1],
+#                     robot.record_error[-1][2] - 2*robot.record_error[-2][2] + robot.record_error[-3][2]]
+
+#     H_k = np.array([[E_k[0], 0, 0],
+#             [0, E_k[1], E_k[2]]])
+#     K_pid = K_e * E_k
+#     ##################################################################
+
+#     return 0.1 * np.dot(H_k, K_pid)
+    
+    
+    
+# i= 0
+# while i < 100:
+#     vel1 = follower_pos(r1, K_e)
+#     transform = np.array([[cos(r1.pos[2]), 0], 
+#                         [sin(r1.pos[2]), 0],
+#                         [0, 1]])
+#     r1.pos = r1.pos +  np.matmul(transform, vel1)
+#     r1.pos[2] = lim_angle(r1.pos[2])
+#     vel2 = follower_pos(r1, K_e)
+#     transform = np.array([[cos(r2.pos[2]), 0], 
+#                         [sin(r2.pos[2]), 0],
+#                         [0, 1]])
+#     r2.pos = r2.pos +  np.matmul(transform, vel2)
+#     r2.pos[2] = lim_angle(r2.pos[2])
+
+#     i+=1
+
+# print(r1.pos.tolist())
+# print(r2.pos.tolist())
 
 
 

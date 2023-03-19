@@ -3,8 +3,8 @@ from math import *
 from array import *
 import random
 import matplotlib.pyplot as plt
-import numpy as np
 import matplotlib.animation as animation
+import numpy as np
 import time
 
 # world parameters
@@ -118,7 +118,7 @@ def animate(data):
         for index2 in range(len(robot_list)):
             if index != index2:
                 if (neighbour(robot_list[index], robot_list[index2], 20)):
-                    robot_list[index].is_behind(robot_list[index2], pi/3)
+                    robot_list[index].is_behind(robot_list[index2])
                     robot_list[index].add_records(robot_list[index2])
                     robot_list[index2].add_records(robot_list[index])
         
