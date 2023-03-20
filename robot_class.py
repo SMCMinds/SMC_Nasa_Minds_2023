@@ -227,6 +227,8 @@ class robot:
     
     #Use goal coordinates to navigate the follower robot 
     def follower_pos(self, leader, dt = 0.5):
+        
+        #Take out for testing
         goal_x, goal_y = self.goal_position(5, self.behind_angle, leader)
         
         #if goal is out of world or robots face each other, do not run function
@@ -235,6 +237,7 @@ class robot:
         
         #Initialize 
         goal_theta = leader.pos[2]
+        
         np_follower_array = np.array(self.pos)
         
         #Error absolute reference frame
@@ -253,13 +256,10 @@ class robot:
         E_t = lambda x: [self.record_error[-1][x], self.record_error[-1][x]*dt, self.record_error[-1][x]/dt]
         
         #Kp, Ki, Kd
-        #K_e = np.array([3,2.5,0.02])
         K_e = np.array([0.1, 1, 0.001])
         E_t_x = np.dot(E_t(0), K_e)
         E_t_y = np.dot(E_t(1), K_e)
-        #K_pid = K_e * E_k
-        # H_k = np.array([[E_k[0], 0, 0],
-        #         [0, E_k[1], E_k[2]]])
+
         
         #[[v],[w]]
         self.vel[0] = E_t_x
@@ -313,8 +313,45 @@ class robot:
     ###### Adding records of another robot to this one. #####
     def add_records(self,robot2):
         self.world_map = np.maximum(self.world_map, robot2.world_map)
+     
+     
+     
         
+    ###########################TESTING#######################
+    #Currently, algorithm is highly dependent on the x and y pos of the robot and the goal
+    def follower_pos_testing(self, goal_x, goal_y, goal_theta, dt = 0.5):
+            
 
+            
+            np_follower_array = np.array(self.pos)
+            
+            #Error absolute reference frame
+            error_frame = np.array([goal_x - self.pos[0], goal_y - self.pos[1],
+                        goal_theta - self.pos[2]])
+            
+            #Error from follower reference frame
+            follower_error = np.matmul(np.array([[cos(self.pos[2]), sin(self.pos[2]), 0],
+                                                        [-sin(self.pos[2]), cos(self.pos[2]), 0],
+                                                        [0, 0, 1]]),
+                                                        error_frame)
+            
+            #Make a record of the errors
+            self.record_error.append(follower_error.tolist())
+            
+            E_t = lambda x: [self.record_error[-1][x], self.record_error[-1][x]*dt, self.record_error[-1][x]/dt]
+            
+            #Kp, Ki, Kd
+            K_e = np.array([0.1, 1, 0.001])
+            E_t_x = np.dot(E_t(0), K_e)
+            E_t_y = np.dot(E_t(1), K_e)
+
+            
+            #[[v],[w]]
+            self.vel[0] = E_t_x
+            self.vel[1] = E_t_y
+            #self.pos[2] = self.lim_angle(atan2(self.vel[1],self.vel[0]))
+            
+            return E_t_x, E_t_y
 
 ####### END robot class #######
 
@@ -333,3 +370,6 @@ class robot:
 
 # ob = robot(100, 5, 6)
 # print(ob.pos[0])
+
+
+

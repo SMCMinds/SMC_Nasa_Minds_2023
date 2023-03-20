@@ -261,23 +261,26 @@ class TestRobot(unittest.TestCase):
         r_list[1].pos = [45,35, 0]  #back right
         self.assertEqual(r_list[1].goal_position(spacing, spacing_angle, r_list[0]), (goal_x_right, goal_y_right), f'{r_list[1]} does not have correct goal')
     
-    def test_follower_pos(self):
+    def test_follower_pos_isolated(self):
         #make the robots loop the action
         #Override the goal_x and goal_y from the original function
         r_list = []
         for i in range(3):
             r_list.append(robot())
+        goal_x = 40 
+        goal_y = 30
+        goal_theta = 0
+        r_list[0].pos = [0,0,0]
         def initialize():
+            i = 0
             while i < 100:
-                vel1 = follower_pos(r1, K_e)
-
-                r1.pos[0] = r1.pos[0] + vel1[0]
-                r1.pos[1] += vel1[1]
-                r1.pos[2] = lim_angle(r1.pos[2])
+                vel1 = r_list[0].follower_pos_testing(goal_x, goal_y, goal_theta)
+                r_list[0].pos[0] = r_list[0].pos[0] + vel1[0]
+                r_list[0].pos[1] += vel1[1]
+                #r_list[0].pos[2] = lim_angle(r_list[0].pos[2])
                 i+=1
-            r1.pos.tolist()
-        
-        self.assertAlmostEqual(r1.pos, [goal_x, goal_y, goal_theta])
+        initialize()
+        self.assertListEqual(r_list[0].pos, [goal_x, goal_y, goal_theta])
 
             
 

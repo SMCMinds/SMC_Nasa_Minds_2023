@@ -7,8 +7,8 @@ r1 = robot()
 r2 = robot()
 
 
-r1.pos = np.array([0,0, 0])
-r2.pos = np.array([0,0, 0])
+r1.pos = np.array([0.0,0.0, 0.0])
+r2.pos = np.array([20.0,0.0, 0.0])
 vel = [0,0]
 #K_e = np.array([3, 2.5, 0.02])
 #K_e = np.array([1, 10, 0.01])
@@ -22,9 +22,10 @@ def lim_angle(angle):
         
 
 def follower_pos(robot, constant, dt = 0.5):
-    goal_x = 50
+    #leader replaced with goals
+    goal_x = 40
     goal_y = 50
-    goal_theta = 0
+    goal_theta = 30
     np_follower_array = np.array(robot.pos)
     
     #Error absolute reference frame
@@ -61,11 +62,8 @@ def follower_pos(robot, constant, dt = 0.5):
     
     E_t_x = np.dot(constant, E_t(0))
     E_t_y = np.dot(constant, E_t(1))
-    # E_t_x = np.dot(K_pid, E_t(0))
-    
-    # H_k = np.array([[E_k(0), 0, 0],
-    #         [0, E_k[1], E_k[2]]])
-    # K_pid = K_e * E_k
+    #E_t_theta = np.dot(constant, E_t(2))
+
     ##################################################################
 
     return E_t_x, E_t_y
@@ -79,16 +77,19 @@ while i < 100:
 
     r1.pos[0] = r1.pos[0] + vel1[0]
     r1.pos[1] += vel1[1]
+    #r1.pos[2] += vel1[2]
     #r1.pos[2] = lim_angle(r1.pos[2])
-    r2.pos[0] +=  vel1[0]
-    r2.pos[1] += vel1[1]
+    r2.pos[0] +=  vel2[0]
+    r2.pos[1] += vel2[1]
 
     #r2.pos[2] = lim_angle(r2.pos[2])
+    
+    #fix this as much as u can
+    print(r1.pos.tolist())
+    print(r2.pos.tolist())
 
     i+=1
 
-print(r1.pos.tolist())
-print(r2.pos.tolist())
 
 
 
