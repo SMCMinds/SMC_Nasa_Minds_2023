@@ -57,7 +57,7 @@ pheromone_map = make_pheromone_area(world_size)
 #############################################
 
 # robot parameters
-measurement_range = 5.0     # range at which we can sense landmarks
+measurement_range = 30.0     # range at which we can sense landmarks
 
 
 #Initiate robot class

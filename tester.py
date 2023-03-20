@@ -85,10 +85,10 @@ while i < 100:
 
     #r2.pos[2] = lim_angle(r2.pos[2])
 
-    print(r1.pos.tolist())
-    print(r2.pos.tolist())
     i+=1
 
+print(r1.pos.tolist())
+print(r2.pos.tolist())
 
 
 
