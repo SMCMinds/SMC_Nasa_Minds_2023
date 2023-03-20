@@ -1,4 +1,4 @@
-git checkout -b Steven Simulation
+
 # Define colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
