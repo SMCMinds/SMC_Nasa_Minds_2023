@@ -1,0 +1,65 @@
+import pygame
+import random
+
+# Set up constants
+WIDTH = 800
+HEIGHT = 600
+BASE_POSITION = (400, 550)
+ROBOT_SIZE = 30
+TARGET_SIZE = 20
+ANT_COUNT = 20
+class Robot:
+    def __init__(self, position):
+        self.position = position
+        self.color = (255, 0, 0)  # red
+        self.path = []
+
+    def update_path(self, path):
+        self.path = path
+
+    def draw(self, surface):
+        x, y = self.position
+        pygame.draw.rect(surface, self.color, (x - ROBOT_SIZE/2, y - ROBOT_SIZE/2, ROBOT_SIZE, ROBOT_SIZE))
+
+class Target:
+    def __init__(self):
+        self.color = (0, 255, 0)  # green
+        self.position = (random.randint(TARGET_SIZE, WIDTH - TARGET_SIZE), random.randint(TARGET_SIZE, HEIGHT/2))
+    
+    def draw(self, surface):
+        x, y = self.position
+        pygame.draw.rect(surface, self.color, (x - TARGET_SIZE/2, y - TARGET_SIZE/2, TARGET_SIZE, TARGET_SIZE))
+def aco(robots, target):
+    # TODO: implement ACO algorithm
+    return [robot.position for robot in robots]
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("ACO Robot Pathfinding")
+
+    robots = [Robot(BASE_POSITION) for _ in range(ANT_COUNT)]
+    target = Target()
+
+    running = True
+    while running:
+        # Handle events
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        # Update robot paths
+        path = aco(robots, target)
+        for robot in robots:
+            robot.update_path(path)
+
+        # Draw everything
+        screen.fill((255, 255, 255))  # white background
+        for robot in robots:
+            robot.draw(screen)
+        target.draw(screen)
+        pygame.display.flip()
+
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()
