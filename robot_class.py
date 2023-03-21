@@ -8,14 +8,14 @@ import numpy as np
 #
 class robot:
 
-    
+
     def __init__(self, world_size=100.0, measurement_range=30.0, world_landmarks=0):
         self.world_size = world_size
         self.measurement_range = measurement_range
         self.landmarks = []  # landmarks[x][y] seen by rover
         self.world_landmarks = world_landmarks
         self.distance = 1.0  # The size of the step that the robot takes
-        
+        self.id = id
         self.pos = [world_size * random.random() - 1 ,world_size * random.random()-1, 2 * pi * random.random()] #position [x,y,theta] , Made purely so computer can access easier
         self.vel = np.array([cos(self.pos[2]),sin(self.pos[2])]) # [dx,dy]
         self.record_movement = [[self.pos[0], self.pos[1], self.pos[2]]] #record_movement[x,y,theta]
@@ -307,6 +307,8 @@ class robot:
 
     # called when print(robot) is called; prints the robot's location
 
+
+
     def __repr__(self):
         return 'Robot: [x=%.5f y=%.5f]' % (self.pos[0], self.pos[1])
 
@@ -354,6 +356,14 @@ class robot:
             return E_t_x, E_t_y
 
 ####### END robot class #######
+
+
+
+
+
+
+
+
 
 
 ####### Create its own map #######
