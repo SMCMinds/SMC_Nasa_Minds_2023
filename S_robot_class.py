@@ -63,7 +63,7 @@ class Robot:
         self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
         self.pos += self.vel
 
-        # wall collision; right now it just bounces
+        #wall collision; right now it just bounces
         if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
             self.vel.x *= -1
             self.acc_angle = math.pi - self.acc_angle
@@ -71,6 +71,25 @@ class Robot:
         if self.pos.y < ROBOT_SIZE or self.pos.y > HEIGHT - ROBOT_SIZE:
             self.vel.y *= -1
             self.acc_angle *= -1
+    
+    def avoid_obstacles(self, obstacles):
+        for obstacle in obstacles:
+            dist = self.pos.distance_to(obstacle)
+            if dist < SENSOR_RADIUS+OBSTACLE_RADIUS:
+                angle_to_obstacle = np.arctan2(obstacle.y-self.pos.y, obstacle.x-self.pos.x)
+                robot_angle = np.arctan2(self.vel.y, self.vel.x)
+                edge_of_obstacle = pygame.Vector2(OBSTACLE_RADIUS*math.cos(angle_to_obstacle), OBSTACLE_RADIUS*math.sin(angle_to_obstacle))
+                if angle_to_obstacle - robot_angle > math.pi:
+                    pass
+                if angle_to_obstacle > robot_angle:
+                    self.acc_angle = robot_angle - math.pi/2
+                else:
+                    self.acc_angle = robot_angle + math.pi/2
+                # desired_vel = (self.pos - obstacle).normalize() * self.max_speed
+                # desired_angle = desired_vel - self.vel
+
+
+
     
     def spread_pheromone_signaling(self,pheromone_signalings):
         not_inside_pheromone_signaling=True
@@ -129,6 +148,13 @@ class Robot:
         self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
         self.pos += self.vel
 
+
+
+    def return_base(self,Current_Map):
+        a=1
+
+                
+'''
     def avoid_obstacles(self, obstacles):
         for obstacle in obstacles:
             dist = self.pos.distance_to(obstacle)
@@ -137,9 +163,6 @@ class Robot:
                 desired_angle = desired_vel - self.vel
                 self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])
 
-    def return_base(self,Current_Map):
-        a=1
 
-                
-    
-        
+
+'''
