@@ -19,6 +19,7 @@ class Robot:
         self.acc_angle = np.arctan2(self.vel[1], self.vel[0])
         self.mode = "searching"
         self.target_on_board=False
+        self.behind = None
 
        
         
@@ -55,14 +56,144 @@ class Robot:
                 self.search_inside_signal(Current_Map)
 
 
+        #check if formation can be activated
+        if self.behind:
+            #if robots see eachother, do nothing
+            if self.behind.behind != self:
+                self.follower_pos(self.behind)
+                
+        
+        #Initialize new position
+        angle = self.pos[2]
+        new_pos = [0,0,0]
+        new_pos[0] = self.pos[0] +  self.vel[0]
+        new_pos[1] = self.pos[1] +  self.vel[1]
+        new_pos[2] = self.pos[2]
+            
+        #Collision Avoidance
+        new_pos = self.avoidance(new_pos[0],new_pos[1],new_pos[2])
+        
+        #Velocity limiter
+        while self.vel[0] > 1.5 or self.vel[1] > 1.5:
+            self.vel[0] = self.vel[0] / 2
+            self.vel[1] = self.vel[1] / 2
+        
+        #Save to the record
+        self.pos = new_pos
+        self.record_movement.append(new_pos)
+        
+        #Add position to its local map
+        self.world_map[int(self.pos[0])][int(self.pos[1])] = 10
+
+    def lim_angle(self, angle):
+        if angle < 0:
+            return angle + 2*pi
+        elif angle > 2 * pi:
+            return angle - 2*pi
+        else: 
+            return angle
+
+    #Checks whether it is behind another robot
+    def is_behind(self, robot2, detection_angle = pi/4):
+        #initialize 
+        
+        angle = atan2(robot2.pos[1]-self.pos[1], robot2.pos[0] - self.pos[0])
+        follower_angle = np.arctan2(self.vel.y, self.vel.x)
+        
+        #angular bounds
+        correct_lower = follower_angle - detection_angle
+        correct_upper = follower_angle + detection_angle
+        within_angles = False
+        
+        #account for different angular bounds because it is tricky when the angle is close to 2pi
+        if (angle >= correct_lower) and (angle <= correct_upper):
+            within_angles = True
+        eq_angle = angle - 2*pi
+        if (eq_angle >= correct_lower) and (eq_angle <= correct_upper):
+            within_angles = True
+        eq_angle = angle + 2*pi
+        if (eq_angle >= correct_lower) and (eq_angle <= correct_upper):
+            within_angles = True
+          
+        #Ensure robot is within distance  
+        dist = self.pos.distance_to(robot2.pos)
+        
+        #Uses the angle and abs distance to test if it is behind another robot
+        if within_angles and (dist <= SENSOR_RADIUS): #detects at max measurement range
+            self.behind = robot2
+            self.behind_angle = angle
+            return True
+        else:
+            self.behind = None
+            return False
+  
+    #Determine whether follower will be on the left or right
+    def wing_pos(self, leader):
+        #Ensure this function is only called when leader is ahead
+        #0 for error
+        #1 for right
+        #2 for left
+        dist_x = leader.pos[0] - self.pos[0] #x
+        dist_y = leader.pos[1] - self.pos[1] #y
+        
+        angle = self.lim_angle(atan2(leader.pos[1]-self.pos[1], leader.pos[0] - self.pos[0])) 
+        
+        leading_theta = leader.pos[2] 
+        
+        
+        if leading_theta < pi:
+            if leading_theta < angle < leading_theta + pi:
+                return 1 
+            else:
+                return 2          
+        elif leading_theta < 2*pi:
+            if leading_theta - pi < angle < leading_theta:
+                return 2
+            else:
+                return 1
+        else:
+            return 0
+
+    #Return the goal coordinates                    
+    def goal_position(self,spacing, angle_spacing, leader):
+        left_or_right = self.wing_pos(leader)
+        leading_theta = leader.pos[2]
+        
+        #checks that the robots are not facing each other
+        if abs(leading_theta-self.pos[2]) < pi/2:
+            if left_or_right == 1: #right wing
+                angle_of_following = leading_theta + pi + angle_spacing
+                x = spacing*cos(angle_of_following)
+                y = spacing*sin(angle_of_following)
+            elif left_or_right == 2: #left wing
+                angle_of_following = leading_theta + pi - angle_spacing
+                x = spacing*cos(angle_of_following)
+                y = spacing*sin(angle_of_following)
+        else: #robots facing each other
+            return -99, -99
+        
+        #ensure goal is not outside the map
+        if self.pos[0] + x < 0 or self.pos[0] + x > self.world_size or self.pos[1] + y < 0 or self.pos[1] + y > self.world_size:
+            return -99,-99
+        else: return leader.pos[0] + x, leader.pos[1] + y
 
     
     def move(self,Current_Map):
+        
+        #Checking for Formation
+        if self.behind:
+            #if robots see eachother, do nothing
+            if self.behind.behind != self:
+                self.vel = self.goal_position(5, math.pi/4, self.behind).move_towards()
+                
+                
         self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
         self.vel += self.get_acceleration()
         self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
         self.pos += self.vel
-
+        
+                
+ 
         #wall collision; right now it just bounces
         if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
             self.vel.x *= -1
