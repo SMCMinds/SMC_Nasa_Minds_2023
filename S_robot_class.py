@@ -91,11 +91,11 @@ class Robot:
         
         #Uses the angle and abs distance to test if it is behind another robot
         if within_angles and (dist <= SENSOR_RADIUS): #detects at max measurement range
-            self.behind = leader
-            self.behind_angle = angle
+            # self.behind = leader
+            # self.behind_angle = angle
             return True
         else:
-            self.behind = None
+            # self.behind = None
             return False
   
     #Determine whether follower will be on the left or right
@@ -107,18 +107,18 @@ class Robot:
         dist_x = leader.pos[0] - self.pos[0] #x
         dist_y = leader.pos[1] - self.pos[1] #y
         
-        angle = self.lim_angle(np.arctan2(leader.pos[1]-self.pos[1], leader.pos[0] - self.pos[0])) 
-        
+        #angle = np.arctan2(dist_y, dist_x)
         leading_theta = np.arctan2(leader.vel.y, leader.vel.x)
+
         
         
-        if leading_theta < math.pi:
-            if leading_theta < angle < leading_theta + math.pi:
+        if abs(leading_theta) < math.pi/2:
+            if dist_x * np.tan(leading_theta) < dist_y:
                 return 1 
             else:
                 return 2          
-        elif leading_theta < 2* math.pi:
-            if leading_theta - math.pi < angle < leading_theta:
+        elif leading_theta < 3* math.pi/2 and leading_theta> math.pi/2:
+            if dist_x * np.tan(leading_theta) < dist_y:
                 return 2
             else:
                 return 1
@@ -161,34 +161,32 @@ class Robot:
         self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.normal_speed)
         self.pos += self.vel
         
+       
+        #Checking for Formation and makes sure that the robot following is stuck in the formation
+        if not self.following:
+            for robot in Current_Map.robots:
+                if robot != self and self.is_behind(robot) and not self.following:
+                    #if robots see eachother, do nothing
+                    self.following = robot
+                    if self.following:
+                        if self.following.following:
+                            if self.following.following == self:
+                                self.following = None
+                                continue
+                break
+                
+                
         if self.following:
             goal_pos = self.goal_position(20, math.pi/4, self.following)
             if goal_pos:
-                # self.vel = robot.vel
-                # self.pos = self.pos.move_towards(goal_pos, 100)
-                self.acc_angle=np.arctan2((goal_pos-self.pos)[1],(goal_pos-self.pos)[0])
-                self.vel = pygame.Vector2(0.01 * (goal_pos-self.pos)[1], 0.01 * (goal_pos-self.pos)[0])  
+                self.vel = self.following.vel
+                self.pos = self.pos.move_towards(goal_pos, 100)
+                # self.acc_angle=np.arctan2((goal_pos-self.pos)[1],(goal_pos-self.pos)[0])
+                # self.vel = pygame.Vector2(0.01 * (goal_pos-self.pos)[1], 0.01 * (goal_pos-self.pos)[0])  
                 # self.vel += self.get_acceleration()
                 # self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
-                self.pos += self.vel 
+                #self.pos += self.vel 
                 return
-        else:
-        #Checking for Formation
-            for robot in Current_Map.robots:
-                if robot != self and self.is_behind(robot):
-                    #if robots see eachother, do nothing
-                    goal_pos = self.goal_position(10, math.pi/4, robot)
-                    self.following = robot
-                    #angle = np.arctan2((goal_pos-self.pos)[1],(goal_pos-self.pos)[0])
-                    if goal_pos:
-                        # self.vel = robot.vel
-                        # self.pos = self.pos.move_towards(goal_pos, 100)
-                        self.acc_angle=np.arctan2((goal_pos-self.pos)[1],(goal_pos-self.pos)[0])
-                        self.vel = pygame.Vector2(0.01 * (goal_pos-self.pos)[1], 0.01 * (goal_pos-self.pos)[0])  
-                        # self.vel += self.get_acceleration()
-                        # self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
-                        self.pos += self.vel 
-                        return
                                 
           
         #wall collision; right now it just bounces
