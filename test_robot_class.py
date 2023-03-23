@@ -22,40 +22,40 @@ class TestRobot(unittest.TestCase):
     def test_is_behind(self):
         r_list = []
         for i in range(3):
-            r_list.append(robot())
+            r_list.append(Robot())
         angle = pi/4
         #Does the angle behind work?
         #The detection distance is maxed by the measurement range
         def x_axis_test():
-            r_list[0].pos = [50,50, 0] #reference point angle is pi/3
+            r_list[0].pos = pygame.Vector2(50,50)  #reference point angle is pi/3
             #r2 is behind r1
-            r_list[1].pos = [40, 40, 0] #directly behind 1 unit
+            r_list[0].pos = pygame.Vector2(40,40)  
             self.assertFalse(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} not supposed to be behind robot {r_list[1]}')
-            r_list[1].pos = [40, 60, 0] #directly behind 1 unit
+            r_list[0].pos = pygame.Vector2(40,60)  
             self.assertFalse(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} not supposed to be behind robot {r_list[1]}') 
-            r_list[1].pos = [21, 50, 0] #directly behind 1 unit
+            r_list[0].pos = pygame.Vector2(21,50)  
             self.assertFalse(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} not supposed to be behind robot {r_list[1]}')
-            r_list[1].pos = [19, 50, 0] #directly behind 1 unit
+            r_list[0].pos = pygame.Vector2(19,50)  
             self.assertFalse(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} not supposed to be behind robot {r_list[1]}')
-            r_list[1].pos = [50, 55, 0] #directly behind 1 unit
+            r_list[0].pos = pygame.Vector2(50,55)  
             self.assertFalse(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} not supposed to be behind robot {r_list[1]}')
-            r_list[1].pos = [40, 40, 0] #directly behind 1 unit
+            r_list[0].pos = pygame.Vector2(40,40)  
             self.assertFalse(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} not supposed to be behind robot {r_list[1]}')
             
             #r2 is in front of r1
-            r_list[1].pos = [50 + (5 * cos(angle)), 50 + (5 * sin(angle)) + 1, 0] #slightly above range
+            r_list[1].pos = pygame.Vector2(50 + (5 * cos(angle)), 50 + (5 * sin(angle)) + 1) #slightly above range
             self.assertFalse(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} not supposed to detect {r_list[1]}')
-            r_list[1].pos = [50 + (5 * cos(angle)), 50 + (5 * sin(angle)) - 1, 0] # on edge of range
+            r_list[1].pos = pygame.Vector2(50 + (5 * cos(angle)), 50 + (5 * sin(angle)) - 1) # on edge of range
             self.assertTrue(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} is supposed to detect {r_list[1]}')
             
-            r_list[1].pos = [50 + (5 * cos(angle)), 50 - (5 * sin(angle)) - 1, 0] #below range
+            r_list[1].pos = pygame.Vector2(50 + (5 * cos(angle)), 50 - (5 * sin(angle)) - 1) #below range
             self.assertFalse(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} not supposed to detect {r_list[1]}')      
-            r_list[1].pos = [50 + (5 * cos(angle)), 50 - (5 * sin(angle)) + 1, 0] #lower edge in range
+            r_list[1].pos = pygame.Vector2(50 + (5 * cos(angle)), 50 - (5 * sin(angle)) + 1) #lower edge in range
             self.assertTrue(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} is supposed to detect {r_list[1]}')     
             
-            r_list[1].pos = [81, 50, 0] #outside detection range to the right
+            r_list[1].pos = pygame.Vector2(81, 50) #outside detection range to the right
             self.assertFalse(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} not supposed to detect {r_list[1]}')   
-            r_list[1].pos = [79, 50, 0] #farthest edge
+            r_list[1].pos = pygame.Vector2(79, 50) #farthest edge
             self.assertTrue(r_list[0].is_behind(r_list[1]), f'robot {r_list[0]} is supposed to detect {r_list[1]}')           
     
         def y_axis_test():
@@ -193,7 +193,7 @@ class TestRobot(unittest.TestCase):
 
         def q3_test():
             r_list[0].pos = [50,50,7 * pi/6]
-            r_list[0].vel = pygame.Vector2(cos(7*pi/6),sin(77*pi/6))
+            r_list[0].vel = pygame.Vector2(cos(7*pi/6),sin(7*pi/6))
             r_list[1].vel = pygame.Vector2(1,0)
             
             
@@ -254,6 +254,7 @@ class TestRobot(unittest.TestCase):
         spacing_angle = pi/4
         spacing = 5
         r_list[0].pos = [50, 50, 0]
+        r_list[0].vel = pygame.Vector2(1,0)
         
         #left
         goal_x_left = 5*cos(r_list[0].pos[2] + pi - spacing_angle) + 50  

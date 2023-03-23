@@ -104,24 +104,36 @@ class Robot:
         #0 for error
         #1 for right
         #2 for left
-        dist_x = leader.pos[0] - self.pos[0] #x
-        dist_y = leader.pos[1] - self.pos[1] #y
+        dist_x = self.pos[0] - leader.pos[0] #x
+        dist_y = self.pos[1] - leader.pos[1] #y
         
         #angle = np.arctan2(dist_y, dist_x)
-        leading_theta = np.arctan2(leader.vel.y, leader.vel.x)
+        leading_theta = self.lim_angle(np.arctan2(leader.vel.y, leader.vel.x))
 
         
         
-        if abs(leading_theta) < math.pi/2:
-            if dist_x * np.tan(leading_theta) < dist_y:
+        if leading_theta < math.pi/2 or leading_theta > 3*math.pi/2:
+            # #dist_x is always positive
+            # Y_angle = np.tan(leading_theta)
+            y_boundary = dist_x * np.tan(leading_theta) 
+            if y_boundary > dist_y:
                 return 1 
             else:
                 return 2          
-        elif leading_theta < 3* math.pi/2 and leading_theta> math.pi/2:
-            if dist_x * np.tan(leading_theta) < dist_y:
+        elif math.pi/2 < leading_theta< 3*math.pi/2:
+            #dist_x is always negativve
+            #Tan of Q3 does not work properly
+            y_boundary = dist_x * np.tan(leading_theta)
+            if  y_boundary > dist_y:
                 return 2
             else:
                 return 1
+        # elif math.pi < leading_theta < 3*math.pi/2:
+        #     y_boundary = dist_x * abs(np.tan(leading_theta))
+        #     if  y_boundary > dist_y:
+        #         return 2
+        #     else:
+        #         return 1
         else:
             return 0
 
