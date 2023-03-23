@@ -1,0 +1,9 @@
+import pygame
+import numpy as np
+
+
+a = pygame.Vector2(10,20)
+goal_pos = pygame.Vector2(50,50)
+ 
+a = a.move_towards(goal_pos, 80)
+print(a)

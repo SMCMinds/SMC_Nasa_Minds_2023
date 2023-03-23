@@ -11,15 +11,16 @@ class Robot:
         self.pos = pygame.Vector2(random.uniform(WIDTH/2+ROBOT_SIZE, WIDTH/2-ROBOT_SIZE), 
                                   random.uniform(HEIGHT/2+ROBOT_SIZE, HEIGHT/2-ROBOT_SIZE))
         self.max_speed = MAX_SPEED
+        self.normal_speed = MAX_SPEED/2
 
         self.vel = pygame.Vector2(random.uniform(-MAX_SPEED , MAX_SPEED ),
                                     random.uniform(-MAX_SPEED , MAX_SPEED ))
         self.vel.normalize() * min(self.vel.magnitude(), self.max_speed) 
-        self.acc_mag = MAX_ACCELERATION
+        self.acc_mag = MAX_ACCELERATION 
         self.acc_angle = np.arctan2(self.vel[1], self.vel[0])
         self.mode = "searching"
         self.target_on_board=False
-        self.behind = None
+        self.following = None
 
        
         
@@ -54,50 +55,20 @@ class Robot:
             elif self.sense_pheromone_signaling(Current_Map.pheromone_signalings):
                 
                 self.search_inside_signal(Current_Map)
-
-
-        #check if formation can be activated
-        if self.behind:
-            #if robots see eachother, do nothing
-            if self.behind.behind != self:
-                self.follower_pos(self.behind)
-                
         
-        #Initialize new position
-        angle = self.pos[2]
-        new_pos = [0,0,0]
-        new_pos[0] = self.pos[0] +  self.vel[0]
-        new_pos[1] = self.pos[1] +  self.vel[1]
-        new_pos[2] = self.pos[2]
-            
-        #Collision Avoidance
-        new_pos = self.avoidance(new_pos[0],new_pos[1],new_pos[2])
-        
-        #Velocity limiter
-        while self.vel[0] > 1.5 or self.vel[1] > 1.5:
-            self.vel[0] = self.vel[0] / 2
-            self.vel[1] = self.vel[1] / 2
-        
-        #Save to the record
-        self.pos = new_pos
-        self.record_movement.append(new_pos)
-        
-        #Add position to its local map
-        self.world_map[int(self.pos[0])][int(self.pos[1])] = 10
-
     def lim_angle(self, angle):
         if angle < 0:
-            return angle + 2*pi
-        elif angle > 2 * pi:
-            return angle - 2*pi
+            return angle + 2* math.pi
+        elif angle > 2 * math.pi:
+            return angle - 2* math.pi
         else: 
             return angle
 
     #Checks whether it is behind another robot
-    def is_behind(self, robot2, detection_angle = pi/4):
+    def is_behind(self, leader, detection_angle = math.pi/4):
         #initialize 
         
-        angle = atan2(robot2.pos[1]-self.pos[1], robot2.pos[0] - self.pos[0])
+        angle = np.arctan2(leader.pos[1]-self.pos[1], leader.pos[0] - self.pos[0])
         follower_angle = np.arctan2(self.vel.y, self.vel.x)
         
         #angular bounds
@@ -108,19 +79,19 @@ class Robot:
         #account for different angular bounds because it is tricky when the angle is close to 2pi
         if (angle >= correct_lower) and (angle <= correct_upper):
             within_angles = True
-        eq_angle = angle - 2*pi
+        eq_angle = angle - 2*math.pi
         if (eq_angle >= correct_lower) and (eq_angle <= correct_upper):
             within_angles = True
-        eq_angle = angle + 2*pi
+        eq_angle = angle + 2*math.pi
         if (eq_angle >= correct_lower) and (eq_angle <= correct_upper):
             within_angles = True
           
         #Ensure robot is within distance  
-        dist = self.pos.distance_to(robot2.pos)
+        dist = self.pos.distance_to(leader.pos)
         
         #Uses the angle and abs distance to test if it is behind another robot
         if within_angles and (dist <= SENSOR_RADIUS): #detects at max measurement range
-            self.behind = robot2
+            self.behind = leader
             self.behind_angle = angle
             return True
         else:
@@ -136,18 +107,18 @@ class Robot:
         dist_x = leader.pos[0] - self.pos[0] #x
         dist_y = leader.pos[1] - self.pos[1] #y
         
-        angle = self.lim_angle(atan2(leader.pos[1]-self.pos[1], leader.pos[0] - self.pos[0])) 
+        angle = self.lim_angle(np.arctan2(leader.pos[1]-self.pos[1], leader.pos[0] - self.pos[0])) 
         
-        leading_theta = leader.pos[2] 
+        leading_theta = np.arctan2(leader.vel.y, leader.vel.x)
         
         
-        if leading_theta < pi:
-            if leading_theta < angle < leading_theta + pi:
+        if leading_theta < math.pi:
+            if leading_theta < angle < leading_theta + math.pi:
                 return 1 
             else:
                 return 2          
-        elif leading_theta < 2*pi:
-            if leading_theta - pi < angle < leading_theta:
+        elif leading_theta < 2* math.pi:
+            if leading_theta - math.pi < angle < leading_theta:
                 return 2
             else:
                 return 1
@@ -157,43 +128,69 @@ class Robot:
     #Return the goal coordinates                    
     def goal_position(self,spacing, angle_spacing, leader):
         left_or_right = self.wing_pos(leader)
-        leading_theta = leader.pos[2]
-        
-        #checks that the robots are not facing each other
-        if abs(leading_theta-self.pos[2]) < pi/2:
-            if left_or_right == 1: #right wing
-                angle_of_following = leading_theta + pi + angle_spacing
-                x = spacing*cos(angle_of_following)
-                y = spacing*sin(angle_of_following)
-            elif left_or_right == 2: #left wing
-                angle_of_following = leading_theta + pi - angle_spacing
-                x = spacing*cos(angle_of_following)
-                y = spacing*sin(angle_of_following)
-        else: #robots facing each other
-            return -99, -99
-        
-        #ensure goal is not outside the map
-        if self.pos[0] + x < 0 or self.pos[0] + x > self.world_size or self.pos[1] + y < 0 or self.pos[1] + y > self.world_size:
-            return -99,-99
-        else: return leader.pos[0] + x, leader.pos[1] + y
+        leading_theta = np.arctan2(leader.vel.y, leader.vel.x)
+        angle = np.arctan2(self.vel.y, self.vel.x)
 
+        #checks that the robots are not facing each other
+        if left_or_right == 1: #right wing
+            angle_of_following = leading_theta + math.pi + angle_spacing
+            x = spacing*math.cos(angle_of_following)
+            y = spacing*math.sin(angle_of_following)
+            if self.pos.x + x < ROBOT_SIZE or self.pos.x + x> WIDTH - ROBOT_SIZE or self.pos.y + y < ROBOT_SIZE or self.pos.y + y > HEIGHT - ROBOT_SIZE:
+                return None
+            return pygame.Vector2(self.pos.x + x,self.pos.y + y)
+        
+        elif left_or_right == 2: #left wing
+            angle_of_following = leading_theta + math.pi - angle_spacing
+            x = spacing*math.cos(angle_of_following)
+            y = spacing*math.sin(angle_of_following)
+            if self.pos.x + x < ROBOT_SIZE or self.pos.x + x> WIDTH - ROBOT_SIZE or self.pos.y + y < ROBOT_SIZE or self.pos.y + y > HEIGHT - ROBOT_SIZE:
+                return None
+
+            return pygame.Vector2(self.pos.x + x,self.pos.y + y)
+                
+ 
+        
+
+    # def follower_pos():
     
     def move(self,Current_Map):
         
-        #Checking for Formation
-        if self.behind:
-            #if robots see eachother, do nothing
-            if self.behind.behind != self:
-                self.vel = self.goal_position(5, math.pi/4, self.behind).move_towards()
-                
-                
         self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
         self.vel += self.get_acceleration()
-        self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
+        self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.normal_speed)
         self.pos += self.vel
         
-                
- 
+        if self.following:
+            goal_pos = self.goal_position(20, math.pi/4, self.following)
+            if goal_pos:
+                # self.vel = robot.vel
+                # self.pos = self.pos.move_towards(goal_pos, 100)
+                self.acc_angle=np.arctan2((goal_pos-self.pos)[1],(goal_pos-self.pos)[0])
+                self.vel = pygame.Vector2(0.01 * (goal_pos-self.pos)[1], 0.01 * (goal_pos-self.pos)[0])  
+                # self.vel += self.get_acceleration()
+                # self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
+                self.pos += self.vel 
+                return
+        else:
+        #Checking for Formation
+            for robot in Current_Map.robots:
+                if robot != self and self.is_behind(robot):
+                    #if robots see eachother, do nothing
+                    goal_pos = self.goal_position(10, math.pi/4, robot)
+                    self.following = robot
+                    #angle = np.arctan2((goal_pos-self.pos)[1],(goal_pos-self.pos)[0])
+                    if goal_pos:
+                        # self.vel = robot.vel
+                        # self.pos = self.pos.move_towards(goal_pos, 100)
+                        self.acc_angle=np.arctan2((goal_pos-self.pos)[1],(goal_pos-self.pos)[0])
+                        self.vel = pygame.Vector2(0.01 * (goal_pos-self.pos)[1], 0.01 * (goal_pos-self.pos)[0])  
+                        # self.vel += self.get_acceleration()
+                        # self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
+                        self.pos += self.vel 
+                        return
+                                
+          
         #wall collision; right now it just bounces
         if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
             self.vel.x *= -1
@@ -202,20 +199,27 @@ class Robot:
         if self.pos.y < ROBOT_SIZE or self.pos.y > HEIGHT - ROBOT_SIZE:
             self.vel.y *= -1
             self.acc_angle *= -1
-    
+        
     def avoid_obstacles(self, obstacles):
-        for obstacle in obstacles:
-            dist = self.pos.distance_to(obstacle)
-            if dist < SENSOR_RADIUS+OBSTACLE_RADIUS:
-                angle_to_obstacle = np.arctan2(obstacle.y-self.pos.y, obstacle.x-self.pos.x)
-                robot_angle = np.arctan2(self.vel.y, self.vel.x)
-                edge_of_obstacle = pygame.Vector2(OBSTACLE_RADIUS*math.cos(angle_to_obstacle), OBSTACLE_RADIUS*math.sin(angle_to_obstacle))
-                if angle_to_obstacle - robot_angle > math.pi:
-                    pass
-                if angle_to_obstacle > robot_angle:
-                    self.acc_angle = robot_angle - math.pi/2
-                else:
-                    self.acc_angle = robot_angle + math.pi/2
+        pass
+        # for obstacle in obstacles:
+        #     dist = self.pos.distance_to(obstacle)
+        #     if dist < SENSOR_RADIUS+OBSTACLE_RADIUS:
+        #         desired_vel = (self.pos - obstacle).normalize() * self.max_speed
+        #         desired_angle = desired_vel - self.vel
+        #         self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])
+        # for obstacle in obstacles:
+        #     dist = self.pos.distance_to(obstacle)
+        #     if dist < SENSOR_RADIUS+OBSTACLE_RADIUS:
+        #         angle_to_obstacle = np.arctan2(obstacle.y-self.pos.y, obstacle.x-self.pos.x)
+        #         robot_angle = np.arctan2(self.vel.y, self.vel.x)
+        #         edge_of_obstacle = pygame.Vector2(OBSTACLE_RADIUS*math.cos(angle_to_obstacle), OBSTACLE_RADIUS*math.sin(angle_to_obstacle))
+        #         if angle_to_obstacle - robot_angle > math.pi:
+        #             pass
+        #         if angle_to_obstacle > robot_angle:
+        #             self.acc_angle = robot_angle - math.pi/2
+        #         else:
+        #             self.acc_angle = robot_angle + math.pi/2
                 # desired_vel = (self.pos - obstacle).normalize() * self.max_speed
                 # desired_angle = desired_vel - self.vel
 
