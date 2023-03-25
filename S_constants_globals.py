@@ -1,4 +1,4 @@
-git checkout -b Steven Simulation
+
 # Define colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -9,6 +9,7 @@ BLUE = (0, 0, 255)
 PURPLE = (128, 0, 128)
 PINK = (250, 192, 225, 128)
 YELLOW =  (255, 255, 0)
+TRANSPARENT = (255, 255, 255, 0)
 
 # Define constants
 SCREEN_WIDTH=1200

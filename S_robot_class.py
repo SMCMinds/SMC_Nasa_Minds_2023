@@ -10,6 +10,7 @@ class Robot:
     def __init__(self):
         self.pos = pygame.Vector2(random.uniform(WIDTH/2+ROBOT_SIZE, WIDTH/2-ROBOT_SIZE), 
                                   random.uniform(HEIGHT/2+ROBOT_SIZE, HEIGHT/2-ROBOT_SIZE))
+        self.grid=[int(self.pos.x),int(self.pos.y)]
         self.max_speed = MAX_SPEED
 
         self.vel = pygame.Vector2(random.uniform(-MAX_SPEED , MAX_SPEED ),
@@ -19,6 +20,7 @@ class Robot:
         self.acc_angle = np.arctan2(self.vel[1], self.vel[0])
         self.mode = "searching"
         self.target_on_board=False
+        self.target_grid=[0,0]
 
        
         
@@ -39,13 +41,12 @@ class Robot:
             self.move(Current_Map)
 
     def update_foraging(self,Current_Map):
+        self.grid=[int(self.pos.x),int(self.pos.y)]
         if self.target_on_board:
-            a=1
-            #return_base(Current_Map)
+            self.return_base(Current_Map)
         else:
-
             if self.sense_target(Current_Map.targets):
-
+                target_grid=self.grid
                 self.target_on_board=True
             elif self.sense_pheromone_foraging(Current_Map.pheromone_foraging):
                 #todo
@@ -53,7 +54,6 @@ class Robot:
             elif self.sense_pheromone_signaling(Current_Map.pheromone_signalings):
                 
                 self.search_inside_signal(Current_Map)
-
 
 
     
@@ -105,6 +105,7 @@ class Robot:
                 cloest_singal=pheromone_signaling
         return cloest_singal
 
+    #TODo
     def sense_pheromone_foraging(self,pheromone_foraging):  
         return False
 
@@ -138,7 +139,10 @@ class Robot:
                 self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])
 
     def return_base(self,Current_Map):
-        a=1
+        if self.target_grid==self.grid:
+            a=0
+
+        
 
                 
     
