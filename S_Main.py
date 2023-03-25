@@ -7,7 +7,7 @@ from S_map_class import Obstacle,Target,General_Map,draw_map
 from S_user_interface import mouse_update,draw_UI
 
 #A quick Branching allowing the drawing of trails.
-#Changes: in the Contant Files, a new "TRANSPARENT = (255, 255, 255, 0)"" is defined
+#Changes: in the Constant Files, a new "TRANSPARENT = (255, 255, 255, 0)"" is defined
 #           all other changes are in this Main file
 #Note: Line 74 or 75 offers 2 ways to draw the trails. Experiment with commenting out one or the other.
 
