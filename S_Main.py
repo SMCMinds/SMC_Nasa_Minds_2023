@@ -71,8 +71,8 @@ def main():
                 #TRAILS HERE
                 start_pos= (robot.pos.x, robot.pos.y)
                 robot.update(Current_Map)
-                #pygame.draw.line(trails, RED, start_pos, (robot.pos.x, robot.pos.y), 1)
-                pygame.draw.circle(trails, RED, (robot.pos.x, robot.pos.y), 1)
+                pygame.draw.line(trails, RED, start_pos, (robot.pos.x, robot.pos.y), 1)
+                #pygame.draw.circle(trails, RED, (robot.pos.x, robot.pos.y), 1)
 
 
 
