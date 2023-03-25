@@ -42,8 +42,8 @@ def main():
             if mouse_command =="restart":
                 Current_Map=General_Map()
                 #TRAILS HERE
-                trails = pygame.Surface((WIDTH, HEIGHT))
-                trails.fill(WHITE)
+                trails = pygame.Surface((WIDTH, HEIGHT),pygame.SRCALPHA)
+                trails.fill(TRANSPARENT)
             if mouse_command =="pause":
                 paused=not paused
             if mouse_command =="0.25X":
@@ -71,8 +71,8 @@ def main():
                 #TRAILS HERE
                 start_pos= (robot.pos.x, robot.pos.y)
                 robot.update(Current_Map)
-                #pygame.draw.line(trails, RED, start_pos, (robot.pos.x, robot.pos.y), 1)
-                pygame.draw.circle(trails, RED, (robot.pos.x, robot.pos.y), 1)
+                pygame.draw.line(trails, RED, start_pos, (robot.pos.x, robot.pos.y), 1)
+                #pygame.draw.circle(trails, RED, (robot.pos.x, robot.pos.y), 1)
 
 
 
