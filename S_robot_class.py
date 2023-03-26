@@ -49,7 +49,8 @@ class Robot:
         self.grid=[int(self.pos.x),int(self.pos.y)]
         
         if self.target_on_board:
-            self.return_base(Current_Map)
+            #self.return_base(Current_Map)
+            a=1
         else:
             if self.sense_target(Current_Map.targets):
                 target_grid=self.grid
