@@ -22,6 +22,11 @@ class Robot:
         self.target_on_board=False
         self.target_grid=[0,0]
 
+        #trail stuff
+        self.show_trail=True
+        self.trail = pygame.Surface((WIDTH, HEIGHT),pygame.SRCALPHA)
+        self.trail.fill(TRANSPARENT)
+
        
         
     def update(self,Current_Map):
@@ -42,8 +47,10 @@ class Robot:
 
     def update_foraging(self,Current_Map):
         self.grid=[int(self.pos.x),int(self.pos.y)]
+        
         if self.target_on_board:
-            self.return_base(Current_Map)
+            #self.return_base(Current_Map)
+            a=1
         else:
             if self.sense_target(Current_Map.targets):
                 target_grid=self.grid
@@ -59,9 +66,7 @@ class Robot:
     
     def move(self,Current_Map):
         self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
-        self.vel += self.get_acceleration()
-        self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
-        self.pos += self.vel
+        
 
         # wall collision; right now it just bounces
         if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
@@ -71,7 +76,10 @@ class Robot:
         if self.pos.y < ROBOT_SIZE or self.pos.y > HEIGHT - ROBOT_SIZE:
             self.vel.y *= -1
             self.acc_angle *= -1
+        
+        self.apply_speed()
     
+
     def spread_pheromone_signaling(self,pheromone_signalings):
         not_inside_pheromone_signaling=True
         for pheromone_signaling in pheromone_signalings:
@@ -111,6 +119,11 @@ class Robot:
 
     def get_acceleration(self):
         return (self.acc_mag*math.cos(self.acc_angle),self.acc_mag*math.sin(self.acc_angle))
+    
+    def apply_speed(self):
+        self.vel += self.get_acceleration()
+        self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
+        self.pos += self.vel
 
     def sense_target(self, targets):
         for target in targets:
@@ -120,15 +133,12 @@ class Robot:
         return False
 
 
-    #potentional loop here        
+    #TODo     
     def search_inside_signal(self,Current_Map):  
         #self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
         cloest_signal=self.get_cloest_signal(Current_Map.pheromone_signalings)
         self.acc_angle=np.arctan2((cloest_signal.pos-self.pos)[1],(cloest_signal.pos-self.pos)[0])
-
-        self.vel += self.get_acceleration()
-        self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
-        self.pos += self.vel
+        self.apply_speed()
 
     def avoid_obstacles(self, obstacles):
         for obstacle in obstacles:
@@ -139,8 +149,28 @@ class Robot:
                 self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])
 
     def return_base(self,Current_Map):
-        if self.target_grid==self.grid:
-            a=0
+        grid_x=self.grid[0]
+        grid_y=self.grid[1]
+        #if self.target_grid==self.grid:
+        if True:
+            #Selects a target_grid based on 2 factors:
+            #the Foraging Pheromone intensity and the general direction of base camp
+            options = [[-1,-1], [0,-1], [1,-1], [-1,0], [1,0], [-1,1], [0,1], [1,1]]
+            weights = []
+            base_vector = Current_Map.mission_base.pos - self.pos
+            np.arctan2(base_vector[1], base_vector[0])
+            for option in options:
+                weight=Current_Map.pheromone_foraging[option[0]][option[1]]
+                print(option[0])
+                weights.append(weight)
+                #np.arctan2(desired_angle[1], desired_angle[0])
+            selected_grid=random.choices(options, weights)[0]
+            self.target_grid =  [grid_x+selected_grid[0],grid_y+selected_grid[1]]
+            self.acc_angle=np.arctan2((self.target_grid[1]-self.grid[1]),(self.target_grid[0]-self.grid[0]))
+        self.move(Current_Map)
+        Current_Map.pheromone_foraging[grid_x][grid_y]=min(1,0.3+Current_Map.pheromone_foraging[grid_x][grid_y])
+        return
+            
 
         
 

@@ -6,10 +6,13 @@ from S_robot_class import Robot
 from S_map_class import Obstacle,Target,General_Map,draw_map
 from S_user_interface import mouse_update,draw_UI
 
-#A quick Branching allowing the drawing of trails.
-#Changes: in the Constant Files, a new "TRANSPARENT = (255, 255, 255, 0)"" is defined
-#           all other changes are in this Main file
-#Note: Line 74 or 75 offers 2 ways to draw the trails. Experiment with commenting out one or the other.
+#Changes most in this file, but also added 3 attributes in the robot class that are trail related
+#Click on the robots to show/hide path
+#easier to do when paused...
+#if multiple robots are at the same location, it toggales all of them on/off
+#if you want to fix this, just make it select a random robot from those that are in range of click around line 70
+#program seems to run a bit slower, but "ultra" option is still really fast
+
 
 def main():
     #ini_map()
@@ -20,10 +23,6 @@ def main():
 
     clock = pygame.time.Clock()   
     Current_Map=General_Map()
-
-    #TRAILS HERE
-    trails = pygame.Surface((WIDTH, HEIGHT),pygame.SRCALPHA)
-    trails.fill(TRANSPARENT)
     
     global FPS
     paused=False
@@ -41,9 +40,6 @@ def main():
 
             if mouse_command =="restart":
                 Current_Map=General_Map()
-                #TRAILS HERE
-                trails = pygame.Surface((WIDTH, HEIGHT),pygame.SRCALPHA)
-                trails.fill(TRANSPARENT)
             if mouse_command =="pause":
                 paused=not paused
             if mouse_command =="0.25X":
@@ -62,17 +58,29 @@ def main():
                     FPS=60
                 ultra=not ultra
 
+            
+            
+            
+            if (event.type == pygame.MOUSEBUTTONUP and event.button == 1):
+                mouse_x=pygame.mouse.get_pos()[0]
+                mouse_y=pygame.mouse.get_pos()[1]
+                for robot in Current_Map.robots:
+                    if (mouse_x > robot.pos.x - ROBOT_SIZE and mouse_x < robot.pos.x + ROBOT_SIZE
+                        and  mouse_y > robot.pos.y - ROBOT_SIZE and mouse_y < robot.pos.y + ROBOT_SIZE):
+                        robot.show_trail= not robot.show_trail
+            
             if event.type == pygame.QUIT:
                 running = False
-                
+
         # Update robots
         if not paused:
             for robot in Current_Map.robots:
                 #TRAILS HERE
                 start_pos= (robot.pos.x, robot.pos.y)
                 robot.update(Current_Map)
-                pygame.draw.line(trails, RED, start_pos, (robot.pos.x, robot.pos.y), 1)
-                #pygame.draw.circle(trails, RED, (robot.pos.x, robot.pos.y), 1)
+                pygame.draw.line(robot.trail, RED, start_pos, (robot.pos.x, robot.pos.y), 1)
+                #pygame.draw.circle(self.trail, RED, (robot.pos.x, robot.pos.y), 1)
+                
 
 
 
@@ -82,7 +90,9 @@ def main():
             draw_map(screen, Current_Map)
 
             #TRAILS HERE
-            screen.blit(trails, (0, 0))
+            for robot in Current_Map.robots:
+                if robot.show_trail:
+                    screen.blit(robot.trail, (0, 0))
             
             #draw_UI suprising takes a lot longer than the draw_map.
             draw_UI(screen, Current_Map, FPS, clock.get_fps(),paused,ultra)
@@ -104,3 +114,6 @@ if __name__ == "__main__":
     # Initialize Pygame
     pygame.init() 
     main()
+
+
+
