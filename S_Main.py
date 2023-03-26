@@ -58,8 +58,7 @@ def main():
                     FPS=60
                 ultra=not ultra
 
-            if event.type == pygame.QUIT:
-                running = False
+            
             
             
             if (event.type == pygame.MOUSEBUTTONUP and event.button == 1):
@@ -69,7 +68,10 @@ def main():
                     if (mouse_x > robot.pos.x - ROBOT_SIZE and mouse_x < robot.pos.x + ROBOT_SIZE
                         and  mouse_y > robot.pos.y - ROBOT_SIZE and mouse_y < robot.pos.y + ROBOT_SIZE):
                         robot.show_trail= not robot.show_trail
-                    
+            
+            if event.type == pygame.QUIT:
+                running = False
+
         # Update robots
         if not paused:
             for robot in Current_Map.robots:
@@ -115,11 +117,3 @@ if __name__ == "__main__":
 
 
 
-
-
-
-# Code here will only be executed when the file is run as the main program,
-if __name__ == "__main__":
-    # Initialize Pygame
-    pygame.init() 
-    main()
