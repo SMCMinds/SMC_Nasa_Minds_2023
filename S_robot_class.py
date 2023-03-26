@@ -333,13 +333,13 @@ class Robot:
             self.acc_angle *= -1
         
     def avoid_obstacles(self, obstacles):
-        pass
-        # for obstacle in obstacles:
-        #     dist = self.pos.distance_to(obstacle)
-        #     if dist < SENSOR_RADIUS/5 + OBSTACLE_RADIUS:
-        #         desired_vel = (self.pos - obstacle).normalize() * self.max_speed
-        #         desired_angle = desired_vel - self.vel
-        #         self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])
+        
+        for obstacle in obstacles:
+            dist = self.pos.distance_to(obstacle)
+            if dist < SENSOR_RADIUS/5 + OBSTACLE_RADIUS:
+                desired_vel = (self.pos - obstacle).normalize() * self.max_speed
+                desired_angle = desired_vel - self.vel
+                self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])
         # for obstacle in obstacles:
         #     dist = self.pos.distance_to(obstacle)
         #     if dist < SENSOR_RADIUS+OBSTACLE_RADIUS:
