@@ -22,7 +22,7 @@ BUTTON_SIZE=40
 # Define Globals
 FPS = 60
 NUM_ROBOTS = 20
-NUM_OBSTACLES = 0   #Original 5
+NUM_OBSTACLES = 5   #Original 5
 NUM_TARGETS = 0     #Original 3
 ROBOT_SIZE = 5
 OBSTACLE_RADIUS = 50
@@ -40,7 +40,9 @@ HEIGHT_SCALE=HEIGHT/GRID_HEIGHT
 # Robot Attributes
 MAX_SPEED = 3
 MAX_ACCELERATION = 0.9
-SENSOR_RADIUS = 30 #Original Value 10
+SENSOR_RADIUS = 50 #Original Value 10
+RIGHT = 1
+LEFT = 2
 
 
 # don't mess with this

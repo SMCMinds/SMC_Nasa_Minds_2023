@@ -7,6 +7,7 @@ from S_pheromone_class import Pheromone_Signaling
 
 # Define Robot class
 class Robot:
+
     def __init__(self):
         self.pos = pygame.Vector2(random.uniform(WIDTH/2+ROBOT_SIZE, WIDTH/2-ROBOT_SIZE), 
                                   random.uniform(HEIGHT/2+ROBOT_SIZE, HEIGHT/2-ROBOT_SIZE))
@@ -17,10 +18,16 @@ class Robot:
                                     random.uniform(-MAX_SPEED , MAX_SPEED ))
         self.vel.normalize() * min(self.vel.magnitude(), self.max_speed) 
         self.acc_mag = MAX_ACCELERATION 
+        self.acc_normal = MAX_ACCELERATION
         self.acc_angle = np.arctan2(self.vel[1], self.vel[0])
         self.mode = "searching"
         self.target_on_board=False
-        self.following = None
+        ##Parent###
+        self.leader = None
+        
+        #Children#
+        self.left_occupied = None
+        self.right_occupied = None
 
        
         
@@ -67,7 +74,8 @@ class Robot:
     #Checks whether it is behind another robot
     def is_behind(self, leader, detection_angle = math.pi/4):
         #initialize 
-        
+        y = leader.pos[1]-self.pos[1]
+        x = leader.pos[0] - self.pos[0]
         angle = np.arctan2(leader.pos[1]-self.pos[1], leader.pos[0] - self.pos[0])
         follower_angle = np.arctan2(self.vel.y, self.vel.x)
         
@@ -101,7 +109,6 @@ class Robot:
     #Determine whether follower will be on the left or right
     def wing_pos(self, leader):
         #Ensure this function is only called when leader is ahead
-        #0 for error
         #1 for right
         #2 for left
         dist_x = self.pos[0] - leader.pos[0] #x
@@ -139,59 +146,163 @@ class Robot:
 
     #Return the goal coordinates                    
     def goal_position(self,spacing, angle_spacing, leader):
-        left_or_right = self.wing_pos(leader)
+         
+        if self.leader.right_occupied:
+            left_or_right = RIGHT
+        else:
+            left_or_right = LEFT
+            
+        ##########TESTING ONLY#################
+        #left_or_right = self.wing_pos(leader)
+        ######################################
+        
         leading_theta = np.arctan2(leader.vel.y, leader.vel.x)
-        angle = np.arctan2(self.vel.y, self.vel.x)
 
         #checks that the robots are not facing each other
-        if left_or_right == 1: #right wing
+        if left_or_right == RIGHT: #right wing
             angle_of_following = leading_theta + math.pi + angle_spacing
             x = spacing*math.cos(angle_of_following)
             y = spacing*math.sin(angle_of_following)
-            if self.pos.x + x < ROBOT_SIZE or self.pos.x + x> WIDTH - ROBOT_SIZE or self.pos.y + y < ROBOT_SIZE or self.pos.y + y > HEIGHT - ROBOT_SIZE:
+            if leader.pos.x + x < ROBOT_SIZE or leader.pos.x + x> WIDTH - ROBOT_SIZE or leader.pos.y + y < ROBOT_SIZE or leader.pos.y + y > HEIGHT - ROBOT_SIZE:
                 return None
-            return pygame.Vector2(self.pos.x + x,self.pos.y + y)
+            leader.right_occupied = self
+            return pygame.Vector2(leader.pos.x + x,leader.pos.y + y)
         
-        elif left_or_right == 2: #left wing
+        elif left_or_right == LEFT: #left wing
             angle_of_following = leading_theta + math.pi - angle_spacing
             x = spacing*math.cos(angle_of_following)
             y = spacing*math.sin(angle_of_following)
-            if self.pos.x + x < ROBOT_SIZE or self.pos.x + x> WIDTH - ROBOT_SIZE or self.pos.y + y < ROBOT_SIZE or self.pos.y + y > HEIGHT - ROBOT_SIZE:
+            if leader.pos.x + x < ROBOT_SIZE or leader.pos.x + x> WIDTH - ROBOT_SIZE or leader.pos.y + y < ROBOT_SIZE or leader.pos.y + y > HEIGHT - ROBOT_SIZE:
                 return None
-
-            return pygame.Vector2(self.pos.x + x,self.pos.y + y)
+            leader.left_occupied = self
+            return pygame.Vector2(leader.pos.x + x,leader.pos.y + y)
                 
- 
-        
+    def search_formation(self, Current_Map):
 
-    # def follower_pos():
-    
-    def move(self,Current_Map):
-        
-        self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
-        self.vel += self.get_acceleration()
-        self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.normal_speed)
-        self.pos += self.vel
-        
-       
-        #Checking for Formation and makes sure that the robot following is stuck in the formation
-        if not self.following:
+        #ensure self does not have a leader
+        if not self.leader:
+            #for the robot in the list
             for robot in Current_Map.robots:
-                if robot != self and self.is_behind(robot) and not self.following:
-                    #if robots see eachother, do nothing
-                    self.following = robot
-                    if self.following:
-                        if self.following.following:
-                            if self.following.following == self:
-                                self.following = None
-                                continue
-                break
-                
-                
-        if self.following:
-            goal_pos = self.goal_position(20, math.pi/4, self.following)
+                #check if robot in list is in front of self and it has no one following
+                if robot != self and self.is_behind(robot) and not self.left_occupied and not self.right_occupied and not robot.leader:
+                    
+                    #A left or right decision is created 
+                    left_or_right = self.wing_pos(robot)
+
+                    #Leader has not recognized self as follower yet since it needs
+                    #to go to the last child of the formation                    
+                    self.leader = robot
+                    if left_or_right == RIGHT and not self.leader.right_occupied:
+                        self.leader.right_occupied = self
+                    elif left_or_right == LEFT and not self.leader.left_occupied:
+                        self.leader.left_occupied = self
+                    else:
+                        self.leader = None
+                    return
+                    
+                '''  ###FOR STRUCTURES GREATER THAN 3####
+                    #Go to parent
+                    tracker = robot
+                    while tracker.leader:
+                        tracker = tracker.leader
+          
+                    ###Going down child trees####
+                    #Right Children
+                    while left_or_right == RIGHT and tracker.right_occupied:
+                        tracker = tracker.right_occupied
+                        
+                        #If self is already in the structure, then 
+                        if tracker == self:
+                            return
+                    
+                    #Left Children
+                    while left_or_right == LEFT and tracker.left_occupied:
+                        tracker = tracker.left_occupied
+                        
+                        if tracker == self:
+                            return
+                    
+                    #If it surves the end of the formation, set the last robot as parent
+                    self.leader = tracker
+                    if left_or_right == RIGHT:
+                        self.leader.right_occupied = self
+                    elif left_or_right == LEFT:
+                        self.leader.left_occupied = self
+                    return
+                        '''                        
+                              
+    #Ensure the children and leader see each other
+    #set a formation limit
+    #if it is only max three, then I dont have to do all of this
+
+    #Fix only if it has a leader and 2 childrn
+    def adust_followers(self,Current_Map):
+        ###############################################
+        ##If the robot is not following anyone, it is able to have left and right occupied
+        #Otherwise, it can only have one side occupied
+        ############################################
+
+        
+       ''' FOR STRUCTURES GREATER THAN 3 
+        if self.leader:
+            if self.right_occupied and self.left_occupied:
+                #If the robot is the left of the leader, transfer all right children 
+                tracker = self
+                if self.leader.left_occupied == self:
+                    #Go to last child
+                    while tracker.right_occupied:
+                        tracker = tracker.right_occupied
+                    
+                    #shift all children to left until it reaches a leftpositioned parent
+                    while tracker.leader.right_occupied and not self:
+                        tracker = tracker.leader
+                        tracker.left_occupied = tracker.right_occupied
+                        tracker.right_occupied = None
+                    
+                    # #Finish the final transfer
+                    # final_placement = self
+                    # while final_placement.left_occupied:
+                    #     final_placement = final_placement.left_occupied
+                    # final_placement.left_occupied = tracker
+                    # tracker.leader = final_placement
+                    
+                #If the robot is the right of the leader, transfer all left children to the right
+                elif self.leader.right_occupied == self:
+                    #Go to last child
+                    while tracker.left_occupied:
+                        tracker = tracker.left_occupied
+                    
+                    #shift all children to left until it reaches a leftpositioned parent
+                    while tracker.leader.left_occupied and not self:
+                        tracker = tracker.leader
+                        tracker.right_occupied = tracker.left_occupied
+                        tracker.left_occupied = None
+                    
+                    # #Finish the final transfer
+                    # final_placement = self
+                    # while final_placement.right_occupied:
+                    #     final_placement = final_placement.right_occupied
+                    # final_placement.right_occupied = tracker
+                    # tracker.leader = final_placement
+                    
+            else:
+                return'''
+        
+        
+    def leader_follower(self, Current_Map):
+        #ensure robot don't follow each other
+        self.search_formation(Current_Map)                
+        #self.adust_followers(Current_Map)
+        
+        ###Ensure code for breaking off the left and right#####
+        
+        #######################################################
+        if self.leader:
+            goal_pos = self.goal_position(20, math.pi/4, self.leader)
             if goal_pos:
-                self.vel = self.following.vel
+                #use kinematics
+                self.acc_normal
+                self.vel = self.leader.vel
                 self.pos = self.pos.move_towards(goal_pos, 100)
                 # self.acc_angle=np.arctan2((goal_pos-self.pos)[1],(goal_pos-self.pos)[0])
                 # self.vel = pygame.Vector2(0.01 * (goal_pos-self.pos)[1], 0.01 * (goal_pos-self.pos)[0])  
@@ -200,6 +311,17 @@ class Robot:
                 #self.pos += self.vel 
                 return
                                 
+
+    
+    
+    def move(self,Current_Map):
+        
+        self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
+        self.vel += self.get_acceleration()
+        self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.normal_speed)
+        self.pos += self.vel
+
+        self.leader_follower(Current_Map)
           
         #wall collision; right now it just bounces
         if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
@@ -214,7 +336,7 @@ class Robot:
         pass
         # for obstacle in obstacles:
         #     dist = self.pos.distance_to(obstacle)
-        #     if dist < SENSOR_RADIUS+OBSTACLE_RADIUS:
+        #     if dist < SENSOR_RADIUS/5 + OBSTACLE_RADIUS:
         #         desired_vel = (self.pos - obstacle).normalize() * self.max_speed
         #         desired_angle = desired_vel - self.vel
         #         self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])
