@@ -327,6 +327,10 @@ class Robot:
         self.vel += self.get_acceleration()
         self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
         self.pos += self.vel
+        
+        
+        #Formation Movement
+        self.leader_follower(Current_Map)
 
         # wall collision; right now it just bounces
         if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
@@ -336,6 +340,17 @@ class Robot:
         if self.pos.y < ROBOT_SIZE or self.pos.y > HEIGHT - ROBOT_SIZE:
             self.vel.y *= -1
             self.acc_angle *= -1
+            
+            
+    def avoid_obstacles(self, obstacles):
+        for obstacle in obstacles:
+            dist = self.pos.distance_to(obstacle)
+            if dist < SENSOR_RADIUS/2+OBSTACLE_RADIUS:
+                desired_vel = (self.pos - obstacle).normalize() * self.max_speed
+                desired_angle = desired_vel - self.vel
+                self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])        
+                
+    
     
     def spread_pheromone_signaling(self,pheromone_signalings):
         not_inside_pheromone_signaling=True
@@ -400,13 +415,7 @@ class Robot:
         self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
         self.pos += self.vel
 
-    def avoid_obstacles(self, obstacles):
-        for obstacle in obstacles:
-            dist = self.pos.distance_to(obstacle)
-            if dist < SENSOR_RADIUS+OBSTACLE_RADIUS:
-                desired_vel = (self.pos - obstacle).normalize() * self.max_speed
-                desired_angle = desired_vel - self.vel
-                self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])
+
 
     def return_base(self,Current_Map):
         grid_x=self.grid[0]
@@ -434,5 +443,3 @@ class Robot:
 
         
 
-
-'''
