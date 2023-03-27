@@ -11,6 +11,7 @@ class Robot:
     def __init__(self):
         self.pos = pygame.Vector2(random.uniform(WIDTH/2+ROBOT_SIZE, WIDTH/2-ROBOT_SIZE), 
                                   random.uniform(HEIGHT/2+ROBOT_SIZE, HEIGHT/2-ROBOT_SIZE))
+        self.grid=[int(self.pos.x),int(self.pos.y)]
         self.max_speed = MAX_SPEED
         self.normal_speed = MAX_SPEED/2
 
@@ -28,6 +29,12 @@ class Robot:
         #Children#
         self.left_occupied = None
         self.right_occupied = None
+        self.target_grid=[0,0]
+
+        #trail stuff
+        self.show_trail=True
+        self.trail = pygame.Surface((WIDTH, HEIGHT),pygame.SRCALPHA)
+        self.trail.fill(TRANSPARENT)
 
        
         
@@ -48,13 +55,14 @@ class Robot:
             self.move(Current_Map)
 
     def update_foraging(self,Current_Map):
+        self.grid=[int(self.pos.x),int(self.pos.y)]
+        
         if self.target_on_board:
+            #self.return_base(Current_Map)
             a=1
-            #return_base(Current_Map)
         else:
-
             if self.sense_target(Current_Map.targets):
-
+                target_grid=self.grid
                 self.target_on_board=True
             elif self.sense_pheromone_foraging(Current_Map.pheromone_foraging):
                 #todo
@@ -311,19 +319,16 @@ class Robot:
                 #self.pos += self.vel 
                 return
                                 
-
     
     
     def move(self,Current_Map):
         
         self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
         self.vel += self.get_acceleration()
-        self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.normal_speed)
+        self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
         self.pos += self.vel
 
-        self.leader_follower(Current_Map)
-          
-        #wall collision; right now it just bounces
+        # wall collision; right now it just bounces
         if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
             self.vel.x *= -1
             self.acc_angle = math.pi - self.acc_angle
@@ -331,32 +336,6 @@ class Robot:
         if self.pos.y < ROBOT_SIZE or self.pos.y > HEIGHT - ROBOT_SIZE:
             self.vel.y *= -1
             self.acc_angle *= -1
-        
-    def avoid_obstacles(self, obstacles):
-        
-        for obstacle in obstacles:
-            dist = self.pos.distance_to(obstacle)
-            if dist < SENSOR_RADIUS/5 + OBSTACLE_RADIUS:
-                desired_vel = (self.pos - obstacle).normalize() * self.max_speed
-                desired_angle = desired_vel - self.vel
-                self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])
-        # for obstacle in obstacles:
-        #     dist = self.pos.distance_to(obstacle)
-        #     if dist < SENSOR_RADIUS+OBSTACLE_RADIUS:
-        #         angle_to_obstacle = np.arctan2(obstacle.y-self.pos.y, obstacle.x-self.pos.x)
-        #         robot_angle = np.arctan2(self.vel.y, self.vel.x)
-        #         edge_of_obstacle = pygame.Vector2(OBSTACLE_RADIUS*math.cos(angle_to_obstacle), OBSTACLE_RADIUS*math.sin(angle_to_obstacle))
-        #         if angle_to_obstacle - robot_angle > math.pi:
-        #             pass
-        #         if angle_to_obstacle > robot_angle:
-        #             self.acc_angle = robot_angle - math.pi/2
-        #         else:
-        #             self.acc_angle = robot_angle + math.pi/2
-                # desired_vel = (self.pos - obstacle).normalize() * self.max_speed
-                # desired_angle = desired_vel - self.vel
-
-
-
     
     def spread_pheromone_signaling(self,pheromone_signalings):
         not_inside_pheromone_signaling=True
@@ -391,11 +370,17 @@ class Robot:
                 cloest_singal=pheromone_signaling
         return cloest_singal
 
+    #TODo
     def sense_pheromone_foraging(self,pheromone_foraging):  
         return False
 
     def get_acceleration(self):
         return (self.acc_mag*math.cos(self.acc_angle),self.acc_mag*math.sin(self.acc_angle))
+    
+    def apply_speed(self):
+        self.vel += self.get_acceleration()
+        self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
+        self.pos += self.vel
 
     def sense_target(self, targets):
         for target in targets:
@@ -405,7 +390,7 @@ class Robot:
         return False
 
 
-    #potentional loop here        
+    #TODo     
     def search_inside_signal(self,Current_Map):  
         #self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
         cloest_signal=self.get_cloest_signal(Current_Map.pheromone_signalings)
@@ -415,13 +400,6 @@ class Robot:
         self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
         self.pos += self.vel
 
-
-
-    def return_base(self,Current_Map):
-        a=1
-
-                
-'''
     def avoid_obstacles(self, obstacles):
         for obstacle in obstacles:
             dist = self.pos.distance_to(obstacle)
@@ -430,6 +408,31 @@ class Robot:
                 desired_angle = desired_vel - self.vel
                 self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])
 
+    def return_base(self,Current_Map):
+        grid_x=self.grid[0]
+        grid_y=self.grid[1]
+        #if self.target_grid==self.grid:
+        if True:
+            #Selects a target_grid based on 2 factors:
+            #the Foraging Pheromone intensity and the general direction of base camp
+            options = [[-1,-1], [0,-1], [1,-1], [-1,0], [1,0], [-1,1], [0,1], [1,1]]
+            weights = []
+            base_vector = Current_Map.mission_base.pos - self.pos
+            np.arctan2(base_vector[1], base_vector[0])
+            for option in options:
+                weight=Current_Map.pheromone_foraging[option[0]][option[1]]
+                print(option[0])
+                weights.append(weight)
+                #np.arctan2(desired_angle[1], desired_angle[0])
+            selected_grid=random.choices(options, weights)[0]
+            self.target_grid =  [grid_x+selected_grid[0],grid_y+selected_grid[1]]
+            self.acc_angle=np.arctan2((self.target_grid[1]-self.grid[1]),(self.target_grid[0]-self.grid[0]))
+        self.move(Current_Map)
+        Current_Map.pheromone_foraging[grid_x][grid_y]=min(1,0.3+Current_Map.pheromone_foraging[grid_x][grid_y])
+        return
+            
+
+        
 
 
 '''
