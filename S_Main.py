@@ -57,10 +57,11 @@ def main():
                 if ultra:
                     FPS=60
                 ultra=not ultra
+            
+            if mouse_command == "pheromone":
+                paused=not paused
 
-            
-            
-            
+
             if (event.type == pygame.MOUSEBUTTONUP and event.button == 1):
                 mouse_x=pygame.mouse.get_pos()[0]
                 mouse_y=pygame.mouse.get_pos()[1]
@@ -70,6 +71,7 @@ def main():
                         robot.show_trail= not robot.show_trail
             
             if event.type == pygame.QUIT:
+                print(f' {Current_Map.area()}% of the map has been covered')
                 running = False
 
         # Update robots
@@ -79,7 +81,11 @@ def main():
                 start_pos= (robot.pos.x, robot.pos.y)
                 robot.update(Current_Map)
                 pygame.draw.line(robot.trail, RED, start_pos, (robot.pos.x, robot.pos.y), 1)
-                #pygame.draw.circle(self.trail, RED, (robot.pos.x, robot.pos.y), 1)
+                
+                pygame.draw.circle(robot.trail, TRANSPARENT_GREEN, (robot.pos.x, robot.pos.y), SENSOR_RADIUS/2)
+
+                robot.phero(screen)
+                
                 
 
 

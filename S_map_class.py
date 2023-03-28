@@ -1,6 +1,7 @@
 import pygame
 import random
 import numpy as np
+from math import *
 from S_constants_globals import *
 from S_robot_class import Robot
 from S_pheromone_class import Pheromone_Signaling
@@ -48,11 +49,67 @@ class General_Map:
         self.pheromone_signalings = []
        
         self.pheromone_foraging = [[0.1 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
+        
+        self.pheromone_grid = np.zeros((WIDTH,HEIGHT))
+        self.pheromone_grid_1 = None
+        # for i in range(9):
+        #     self.pheromone_grid.append(np.zeros((int(WIDTH/3), int(HEIGHT/3))))
+        
+    def pheromone_grid_func(self, robot):
+        #If the robot is in a grid, drop that pheromone in that grid
+
+        if 0 < robot.pos.x <= WIDTH/3 and 0 < robot.pos.y <= HEIGHT/3:
+            return 0, robot.pos.x, robot.pos.y
+        
+        elif WIDTH/3 < robot.pos.x <= 2*WIDTH/3 and 0 < robot.pos.y <= HEIGHT/3:
+            return 1, robot.pos.x - WIDTH/3, robot.pos.y
+        
+        elif 2*WIDTH/3 < robot.pos.x <= WIDTH and 0 < robot.pos.y <= HEIGHT/3:
+            return 2, robot.pos.x - 2* WIDTH/3, robot.pos.y
+        
+        elif 0 < robot.pos.x <= WIDTH/3 and HEIGHT/3 < robot.pos.y <= 2*HEIGHT/3:
+            return 3, robot.pos.x, robot.pos.y - HEIGHT/3
+        
+        elif WIDTH/3 < robot.pos.x <= 2*WIDTH/3 and HEIGHT/3 < robot.pos.y <= 2*HEIGHT/3:
+            return 4, robot.pos.x - WIDTH/3, robot.pos.y - HEIGHT/3
+        
+        elif 2*WIDTH/3 < robot.pos.x <= WIDTH and HEIGHT/3 < robot.pos.y <= 2*HEIGHT/3:
+            return 5, robot.pos.x - 2 * WIDTH/3, robot.pos.y - HEIGHT/3
+        
+        elif 0 < robot.pos.x <= WIDTH/3 and 2 *HEIGHT/3 < robot.pos.y <= HEIGHT:
+            return 6, robot.pos.x, robot.pos.y - 2 * HEIGHT/3
+        
+        elif WIDTH/3 < robot.pos.x <= 2*WIDTH/3 and 2*HEIGHT/3 < robot.pos.y <= HEIGHT:
+            return 7, robot.pos.x - WIDTH/3, robot.pos.y - 2 * HEIGHT/3
+        
+        elif 2*WIDTH/3 < robot.pos.x <= WIDTH and 2*HEIGHT/3 < robot.pos.y <= HEIGHT:
+            return 8, robot.pos.x - 2 * WIDTH/3, robot.pos.y - 2 * HEIGHT/3
+        
+        else:
+            print('out of range of pheromone grid')
+            return -1,0,0
+
+    def area(self):
+        a = 0
+        for i in self.pheromone_grid:
+            for x in i:
+                for y in x:
+                    if y > 0:
+                        a += 1
+                        
+        #Area of obstacles
+        obstacle_area = 0
+        for obstacle in self.obstacles:
+            obstacle_area = 2*pi* OBSTACLE_RADIUS**2
+        total_board = (WIDTH * HEIGHT) - obstacle_area
+        return a/total_board * 100
+
 
 # Display robots obstacles and Target
 def draw_map(screen, Current_Map):
     for pheromone in Current_Map.pheromone_signalings:
         pygame.draw.circle(screen, PINK, (int(pheromone.pos.x), int(pheromone.pos.y)), int(pheromone.radius) )
+        
     for obstacle in Current_Map.obstacles:
         pygame.draw.circle(screen, GRAY, (int(obstacle.pos.x), int(obstacle.pos.y)), OBSTACLE_RADIUS)
     for target in Current_Map.targets:

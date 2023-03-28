@@ -19,7 +19,7 @@ class Robot:
                                     random.uniform(-MAX_SPEED , MAX_SPEED ))
         self.vel.normalize() * min(self.vel.magnitude(), self.max_speed) 
         self.acc_mag = MAX_ACCELERATION 
-        self.acc_normal = MAX_ACCELERATION
+        self.acc_normal = MAX_ACCELERATION/2
         self.acc_angle = np.arctan2(self.vel[1], self.vel[0])
         self.mode = "searching"
         self.target_on_board=False
@@ -35,9 +35,12 @@ class Robot:
         self.show_trail=True
         self.trail = pygame.Surface((WIDTH, HEIGHT),pygame.SRCALPHA)
         self.trail.fill(TRANSPARENT)
-
-       
         
+        self.move_counter = 0
+
+        
+        
+
     def update(self,Current_Map):
         if self.mode =="searching":
             self.update_searching(Current_Map)
@@ -79,6 +82,7 @@ class Robot:
         else: 
             return angle
 
+    ##############FORMATION MOVEMENT###################################
     #Checks whether it is behind another robot
     def is_behind(self, leader, detection_angle = math.pi/4):
         #initialize 
@@ -113,6 +117,7 @@ class Robot:
         else:
             # self.behind = None
             return False
+  
   
     #Determine whether follower will be on the left or right
     def wing_pos(self, leader):
@@ -155,7 +160,7 @@ class Robot:
     #Return the goal coordinates                    
     def goal_position(self,spacing, angle_spacing, leader):
          
-        if self.leader.right_occupied:
+        if self.leader.right_occupied == self:
             left_or_right = RIGHT
         else:
             left_or_right = LEFT
@@ -239,11 +244,8 @@ class Robot:
                     return
                         '''                        
                               
-    #Ensure the children and leader see each other
-    #set a formation limit
-    #if it is only max three, then I dont have to do all of this
-
     #Fix only if it has a leader and 2 childrn
+    #Only for structures greater than 3
     def adust_followers(self,Current_Map):
         ###############################################
         ##If the robot is not following anyone, it is able to have left and right occupied
@@ -309,7 +311,7 @@ class Robot:
             goal_pos = self.goal_position(20, math.pi/4, self.leader)
             if goal_pos:
                 #use kinematics
-                self.acc_normal
+                #self.acc_normal
                 self.vel = self.leader.vel
                 self.pos = self.pos.move_towards(goal_pos, 100)
                 # self.acc_angle=np.arctan2((goal_pos-self.pos)[1],(goal_pos-self.pos)[0])
@@ -318,7 +320,170 @@ class Robot:
                 # self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
                 #self.pos += self.vel 
                 return
-                                
+
+    ###################################################################                   
+    
+################# PHEROMONE ALGORITHM ###############################
+    def drop_pheromone(self, grid , x_pos, y_pos):
+        x = np.arange(0, len(grid))
+        y = np.arange(0, len(grid[0]))
+        # numpy_grid = np.array(grid)
+
+        r = SENSOR_RADIUS/2
+        
+        mask = (x[np.newaxis,:] - x_pos)**2 + (y[:,np.newaxis] - y_pos)**2 < r**2
+        grid[mask] += 1
+        return grid
+    
+    def trailing_pheromone(self,grid,x,y):
+        #create a list of the robots movement
+        #Use that and add a radius to note the area covered
+        #For each robot, in pheromone sensing, overlap the pheromones
+                
+        #Check the surroundings 
+        x_accel = 0
+        y_accel = 0
+        #find a different way
+        r = SENSOR_RADIUS/3
+        x_arr = np.arange(0, len(grid))
+        y_arr = np.arange(0, len(grid[0]))        
+                
+        #Border containment for whole grid
+        '''        if self.pos.x + SENSOR_RADIUS > WIDTH:
+                sensor_width_high = WIDTH - self.pos.x
+                sensor_width_low = self.pos.x - SENSOR_RADIUS
+            
+            elif self.pos.x - SENSOR_RADIUS < 0:
+                sensor_width_low = self.pos.x
+                sensor_width_high = self.pos.x + SENSOR_RADIUS
+                
+            else:
+                sensor_width_high = self.pos.x + SENSOR_RADIUS
+                sensor_width_low = self.pos.x - SENSOR_RADIUS
+        
+            if self.pos.y + SENSOR_RADIUS > HEIGHT:
+                sensor_height_high = HEIGHT - self.pos.y
+                sensor_height_low = self.pos.y - SENSOR_RADIUS
+            
+            elif self.pos.y - SENSOR_RADIUS < 0:
+                sensor_height_low = self.pos.y
+                sensor_height_high = self.pos.y + SENSOR_RADIUS
+                
+            else:
+            sensor_height_high = self.pos.y + SENSOR_RADIUS
+            sensor_height_low = self.pos.y - SENSOR_RADIUS
+        '''
+
+        #use mask
+        avg = 0.0
+        area = 2 * math.pi * r**2
+
+        #Return true if the area is within circle
+        search_area = (x_arr[np.newaxis,:] - x)**2 + (y_arr[:,np.newaxis] - y)**2 < r**2
+        length = (WIDTH-1)
+        for i in range(0,length,3):
+            for j in range(0,length,3):
+                if search_area[i][j]:
+                    avg += grid[i][j]
+        avg = avg / area           
+        # # value_area = x[np.newaxis,:] + y[:,np.newaxis] 
+        # for i in range(len(search_area)):
+        #     for j in range(len(search_area[i])):
+        #         if search_area[i][j]:
+        #             x_accel -= (avg - grid[i][j]) * (i-x)
+        #             y_accel -= (avg - grid[i][j]) * (j-y)
+        #total = sum(sum(value_area,[]))  
+        grid[search_area] += 1
+        
+        # for i in range(len(search_area)):
+        #     for j in range(len(search_area[i])):
+        #         if search_area[i][j] and grid[i][j] == 0:
+        #             desired_vel = (self.pos - pygame.Vector2(i,j)).normalize() * self.max_speed
+        #             desired_angle = desired_vel - self.vel
+        #             self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])
+        #             # self.acc_angle = np.arctan2(j-y, i-x)
+        #             self.vel += self.acc_normal*math.cos(self.acc_angle),self.acc_normal*math.sin(self.acc_angle)
+
+        #             self.pos += self.vel
+        #             return
+
+            
+        #use hypothetical position   
+        #new_pos = pygame.Vector2(x,y) + self.vel
+        
+        
+        # # wall collision; right now it just bounces
+        # if new_pos.x <= ROBOT_SIZE or new_pos.x >= WIDTH - ROBOT_SIZE:
+        #     self.vel.x *= -1
+        #     self.acc_angle = math.pi - self.acc_angle
+        #     new_pos = pygame.Vector2(x,y) + self.vel
+            
+
+        # if new_pos.y <= ROBOT_SIZE or new_pos.y >= HEIGHT - ROBOT_SIZE:
+        #     self.vel.y *= -1
+        #     self.acc_angle *= -1
+        #     new_pos = pygame.Vector2(x,y) + self.vel
+
+        b = 0
+        c=2
+        # while grid[int(new_pos.x)][int(new_pos.y)] > avg:
+        #     a = grid[int(new_pos.x)][int(new_pos.y)]
+        #     self.vel = self.vel.rotate(30)
+        #     new_pos = pygame.Vector2(x,y) + self.vel
+        #     b+=1
+        #     if b == 10:
+                
+        #         c+=0.5
+        #         self.vel = self.vel.normalize() * self.vel.magnitude() * c
+        #         b=0
+        #     # wall collision; right now it just bounces
+        #     if new_pos.x <= ROBOT_SIZE or new_pos.x >= WIDTH - ROBOT_SIZE:
+        #         self.vel.x *= -1
+        #         self.acc_angle = math.pi - self.acc_angle
+        #         new_pos = pygame.Vector2(x,y) + self.vel
+                
+
+        #     if new_pos.y <= ROBOT_SIZE or new_pos.y >= HEIGHT - ROBOT_SIZE:
+        #         self.vel.y *= -1
+        #         self.acc_angle *= -1
+        #         new_pos = pygame.Vector2(x,y) + self.vel
+        
+        # print(self.vel)
+        #need to account for the grid #
+        
+        
+        # #Go towards the place with the least value
+        
+        if grid[int(self.pos.x)][int(self.pos.y)] > avg:
+            self.acc_angle = 0.3
+        # #dist = self.pos.distance_to(pygame.Vector2(min_x, min_y))
+        # self.acc_angle = np.arctan2(y_accel, x_accel)   
+        
+        # #However, penalize robots getting too close  
+        # #self.avoid_robots(Current_Map)
+
+        # self.vel += self.get_acceleration()
+        # # if self.vel.magnitude() < self.max_speed:
+        # #     self.vel = -1 * self.vel.normalize() * self.vel.magnitude()
+        # # else: 
+        # #     self.vel = -1*self.vel.normalize() * self.max_speed
+        # self.pos += self.vel
+        # return
+   
+    def phero(self, screen):
+        #Copy array 
+        self.pheromone_grid_1 = pygame.surfarray.array2d(screen)
+        print(screen.get_at((10, 10)))
+        #pygame.Surface.unlock(screen)
+        a=1
+        return
+        
+    
+    
+   
+   
+   
+   
     
     
     def move(self,Current_Map):
@@ -326,11 +491,38 @@ class Robot:
         self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
         self.vel += self.get_acceleration()
         self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
+        # if self.leader is None:
+        #     self.avoid_robots(Current_Map)
+        #     grid_index, x, y = Current_Map.pheromone_grid_func(self)
+        #     Current_Map.pheromone_grid[grid_index] = self.drop_pheromone(Current_Map.pheromone_grid[grid_index],x,y)
+
+        #Pheromone
+        #If it is not already following, follow pheromone movement
+        #Start the after the robot has gone out of the base
+        self.move_counter += 1
+        if self.leader is None:
+            Current_Map.pheromone_grid = self.drop_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
+            
+            # if self.move_counter > 100:
+            #     self.trailing_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
+            
+        ''' For Grids
+            grid_index, x, y = Current_Map.pheromone_grid_func(self)
+            if grid_index != -1:
+                
+                Current_Map.pheromone_grid[grid_index] = self.drop_pheromone(Current_Map.pheromone_grid[grid_index],x,y)
+                if self.move_counter > 100:
+                    self.trailing_pheromone(Current_Map.pheromone_grid[grid_index],x,y)
+                    self.pos += self.vel'''
+            
+
+
         self.pos += self.vel
         
         
         #Formation Movement
         self.leader_follower(Current_Map)
+        
 
         # wall collision; right now it just bounces
         if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
@@ -345,12 +537,27 @@ class Robot:
     def avoid_obstacles(self, obstacles):
         for obstacle in obstacles:
             dist = self.pos.distance_to(obstacle)
-            if dist < SENSOR_RADIUS/2+OBSTACLE_RADIUS:
+            if dist < SENSOR_RADIUS+OBSTACLE_RADIUS:
                 desired_vel = (self.pos - obstacle).normalize() * self.max_speed
                 desired_angle = desired_vel - self.vel
                 self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])        
                 
-    
+    #At this point, it is easier if they just repel from getting too close
+    def avoid_robots(self, Current_Map):
+        shortest_dist = 1000
+        for robot in Current_Map.robots:
+            dist = self.pos.distance_to(robot.pos)
+            if (dist < shortest_dist) and (robot is not self.right_occupied) and (robot is not self.left_occupied) and (robot is not self):
+                shortest_dist = dist
+                selected_robot = robot
+        
+        #find closest robot that is not a follower
+        if (shortest_dist < SENSOR_RADIUS/2) and (selected_robot is not self):
+            #if wing_pos
+            desired_vel = (self.pos - selected_robot.pos).normalize() * self.max_speed
+            desired_angle = desired_vel - self.vel
+            self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])   
+
     
     def spread_pheromone_signaling(self,pheromone_signalings):
         not_inside_pheromone_signaling=True

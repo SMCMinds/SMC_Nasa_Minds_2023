@@ -32,11 +32,11 @@ def mouse_update(event):
         if (event.button == 1 and mouse_x > WIDTH + 70 and mouse_x < WIDTH + 70 + 61
             and mouse_y > 68 and mouse_y < 68 + 28):
             return "ultra"
-        
-
         if (event.button == 1 and mouse_x > WIDTH + 70 and mouse_x < WIDTH + 70 + 61
-            and mouse_y > 68 and mouse_y < 68 + 28):
-            return "ultra"
+            and mouse_y > 105 and mouse_y < 105 + 28):
+            return "pheromone"
+            
+            
 
 
 
@@ -58,7 +58,7 @@ def draw_UI(screen,Current_Map, FPS, real_FPS,paused,ultra):
         screen.blit(text, (SCREEN_WIDTH-100, SCREEN_HEIGHT-80))
         return
 
-    
+    #Never runs?
     if False:
         pheromone_foraging=pygame.Surface((WIDTH,HEIGHT), pygame.SRCALPHA)
         for i in range (GRID_WIDTH):
@@ -123,6 +123,9 @@ def draw_UI(screen,Current_Map, FPS, real_FPS,paused,ultra):
 
     text = font.render("Ultra " , True, (0, 0, 0))
     screen.blit(text, (WIDTH+75, 73))
+
+    text = font.render("pheromone " , True, (0, 0, 0))
+    screen.blit(text, (WIDTH+75, 115))
 
     #Robot Roles
     signaling_robots=0
