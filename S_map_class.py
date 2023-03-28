@@ -92,10 +92,9 @@ class General_Map:
     def area(self):
         a = 0
         for i in self.pheromone_grid:
-            for x in i:
-                for y in x:
-                    if y > 0:
-                        a += 1
+            for j in i:
+                if j > 0:
+                    a += 1
                         
         #Area of obstacles
         obstacle_area = 0

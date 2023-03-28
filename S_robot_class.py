@@ -377,23 +377,61 @@ class Robot:
         #use mask
         avg = 0.0
         area = 2 * math.pi * r**2
-
         #Return true if the area is within circle
         search_area = (x_arr[np.newaxis,:] - x)**2 + (y_arr[:,np.newaxis] - y)**2 < r**2
-        length = (WIDTH-1)
-        for i in range(0,length,3):
-            for j in range(0,length,3):
-                if search_area[i][j]:
-                    avg += grid[i][j]
-        avg = avg / area           
-        # # value_area = x[np.newaxis,:] + y[:,np.newaxis] 
+        min = 100
+        for i in range(0,360, 40):
+            total = 0
+            for j in range(0,int(r)):
+                dist = pygame.Vector2.from_polar((r, i))
+                total += grid[int(self.pos.x + dist.x)][int(self.pos.y + dist.y)]
+        avg = total/area
+        
+        if avg > 3:
+            for i in range(0,360, 40):
+                total = 0
+                for j in range(r):
+                    dist = pygame.Vector2.from_polar((r, i))
+                    total += grid[int(self.pos.x + dist.x)][int(self.pos.y + dist.y)]
+                    if total < min:
+                        min = i
+            
+            self.acc_angle = i / 180 * math.pi
+            self.vel += pygame.Vector2(self.acc_normal*math.cos(self.acc_angle),self.acc_normal*math.sin(self.acc_angle))
+
+        
+        grid[search_area] += 1
+        
+        # length = (WIDTH-1)
+        # for i in range(0,length,3):
+        #     for j in range(0,length,3):
+        #         #create a bunch of polar lines that can calculate the average along each path
+        #         if search_area[i][j]:
+        #             avg += grid[i][j]
+        #             area += 1
+        #avg = avg / area           
+        # value_area = x[np.newaxis,:] + y[:,np.newaxis] 
         # for i in range(len(search_area)):
         #     for j in range(len(search_area[i])):
         #         if search_area[i][j]:
         #             x_accel -= (avg - grid[i][j]) * (i-x)
         #             y_accel -= (avg - grid[i][j]) * (j-y)
         #total = sum(sum(value_area,[]))  
-        grid[search_area] += 1
+        
+        # #if the robot is in a high intensity area, then increase the velocity. Also, try to find the low value
+        # #maybe only activate when the intensity reaches a certain limit
+        # a = 0
+        # while avg  > 4:
+        #     if a < 0:
+        #         self.acc_angle += 0.5
+        #         self.vel += self.acc_normal*math.cos(self.acc_angle),self.acc_normal*math.sin(self.acc_angle)
+        #         a = 4
+        #         break
+        #     if a == 3:
+        #         self.acc_angle -= 0.5
+        #     self.vel = self.vel.normalize() * self.vel.magnitude() * avg * 0.5
+        #     a-=1
+        
         
         # for i in range(len(search_area)):
         #     for j in range(len(search_area[i])):
@@ -424,8 +462,8 @@ class Robot:
         #     self.acc_angle *= -1
         #     new_pos = pygame.Vector2(x,y) + self.vel
 
-        b = 0
-        c=2
+        # b = 0
+        # c=2
         # while grid[int(new_pos.x)][int(new_pos.y)] > avg:
         #     a = grid[int(new_pos.x)][int(new_pos.y)]
         #     self.vel = self.vel.rotate(30)
@@ -454,8 +492,8 @@ class Robot:
         
         # #Go towards the place with the least value
         
-        if grid[int(self.pos.x)][int(self.pos.y)] > avg:
-            self.acc_angle = 0.3
+        # if grid[int(self.pos.x)][int(self.pos.y)] > avg:
+        #     self.acc_angle = 0.3
         # #dist = self.pos.distance_to(pygame.Vector2(min_x, min_y))
         # self.acc_angle = np.arctan2(y_accel, x_accel)   
         
@@ -473,6 +511,24 @@ class Robot:
     def phero(self, screen):
         #Copy array 
         self.pheromone_grid_1 = pygame.surfarray.array2d(screen)
+        #identify by alpha values
+        #enumerate? #Get Values through
+        #can I use the mask as a condition in the if statement and pick the closest white target
+        search_area = (x_arr[np.newaxis,:] - x)**2 + (y_arr[:,np.newaxis] - y)**2 < r**2
+        avg = 0
+        length = (WIDTH-1)
+        for i in range(0,length,3):
+            for j in range(0,length,3):
+                if search_area[i][j]:
+                    for x in range(i-1,i+2):
+                        for y in range(j-1, j+2):
+                            #Exclude transparencies that has 255
+                            new_screen = screen.convert_alpha()
+                            avg += screen.get_alpha()
+                    #Search for the minimm average alpha value in the 3x3 spacing
+                    #move to the minimum alpha value
+
+
         print(screen.get_at((10, 10)))
         #pygame.Surface.unlock(screen)
         a=1
@@ -503,8 +559,8 @@ class Robot:
         if self.leader is None:
             Current_Map.pheromone_grid = self.drop_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
             
-            # if self.move_counter > 100:
-            #     self.trailing_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
+            if self.move_counter > 100:
+                self.trailing_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
             
         ''' For Grids
             grid_index, x, y = Current_Map.pheromone_grid_func(self)

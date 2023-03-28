@@ -19,7 +19,7 @@ def main():
     #Main game loop
     running = True
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    screen.fill(WHITE)
+    screen.fill(TRANSPARENT)
 
     clock = pygame.time.Clock()   
     Current_Map=General_Map()
@@ -84,7 +84,7 @@ def main():
                 
                 pygame.draw.circle(robot.trail, TRANSPARENT_GREEN, (robot.pos.x, robot.pos.y), SENSOR_RADIUS/2)
 
-                robot.phero(screen)
+                #robot.phero(screen)
                 
                 
 
