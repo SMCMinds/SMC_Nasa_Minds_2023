@@ -50,7 +50,7 @@ class General_Map:
        
         self.pheromone_foraging = [[0.1 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
         
-        self.pheromone_grid = np.zeros((WIDTH,HEIGHT))
+        self.pheromone_grid = np.zeros((WIDTH+5,HEIGHT+5))
         self.pheromone_grid_1 = None
         # for i in range(9):
         #     self.pheromone_grid.append(np.zeros((int(WIDTH/3), int(HEIGHT/3))))
@@ -88,6 +88,33 @@ class General_Map:
         else:
             print('out of range of pheromone grid')
             return -1,0,0
+        
+        
+                #Border containment for whole grid
+        '''        if self.pos.x + SENSOR_RADIUS > WIDTH:
+                sensor_width_high = WIDTH - self.pos.x
+                sensor_width_low = self.pos.x - SENSOR_RADIUS
+            
+            elif self.pos.x - SENSOR_RADIUS < 0:
+                sensor_width_low = self.pos.x
+                sensor_width_high = self.pos.x + SENSOR_RADIUS
+                
+            else:
+                sensor_width_high = self.pos.x + SENSOR_RADIUS
+                sensor_width_low = self.pos.x - SENSOR_RADIUS
+        
+            if self.pos.y + SENSOR_RADIUS > HEIGHT:
+                sensor_height_high = HEIGHT - self.pos.y
+                sensor_height_low = self.pos.y - SENSOR_RADIUS
+            
+            elif self.pos.y - SENSOR_RADIUS < 0:
+                sensor_height_low = self.pos.y
+                sensor_height_high = self.pos.y + SENSOR_RADIUS
+                
+            else:
+            sensor_height_high = self.pos.y + SENSOR_RADIUS
+            sensor_height_low = self.pos.y - SENSOR_RADIUS
+        '''
 
     def area(self):
         a = 0
