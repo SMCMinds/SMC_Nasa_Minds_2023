@@ -50,7 +50,7 @@ class General_Map:
        
         self.pheromone_foraging = [[0.1 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
         
-        self.pheromone_grid = np.zeros((WIDTH+5,HEIGHT+5))
+        self.pheromone_grid = np.zeros((WIDTH+10,HEIGHT+10))
         self.pheromone_grid_1 = None
         # for i in range(9):
         #     self.pheromone_grid.append(np.zeros((int(WIDTH/3), int(HEIGHT/3))))

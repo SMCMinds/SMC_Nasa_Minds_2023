@@ -317,7 +317,7 @@ class Robot:
             
             
             
-            goal_pos = self.goal_position(20, math.pi/4, self.leader)
+            goal_pos = self.goal_position(SENSOR_RADIUS, math.pi/4, self.leader)
             if goal_pos:
                 #use kinematics
                 #self.acc_normal
@@ -345,7 +345,36 @@ class Robot:
         return grid
     
     
-    def exploration_pheromone(self,grid,x,y):
+    def exploration_pheromone(self,Current_Map):
+        #make pheromones a hard obstacle
+        max = 0
+        max_x = 0
+        max_y = 0
+        avg = 0.0
+        for i in range(int(self.pos.x) - 2, int(self.pos.x) + 3):
+            for j in range(int(self.pos.y)-2, int(self.pos.y) + 3):
+                avg += Current_Map.pheromone_grid[i][j]
+                if Current_Map.pheromone_grid[i][j] > max:
+                    max = Current_Map.pheromone_grid[i][j]
+                    max_x = i
+                    max_y = j
+                    
+        avg /= 25
+
+        if Current_Map.pheromone_grid[int(self.pos.x)][int(self.pos.y)] > avg:
+            
+            dist = self.pos.distance_to(pygame.Vector2(i,j))
+            if dist < SENSOR_RADIUS:
+                desired_vel = (self.pos - pygame.Vector2(i,j)).normalize() * self.max_speed
+                desired_angle = desired_vel - self.vel
+                self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])  
+                self.apply_speed()
+
+        #detect whether the robot goes in a circle
+        #Deacticate when the pheromone values get too high
+        
+        
+        
         pass
     
     
@@ -363,7 +392,6 @@ class Robot:
         x_arr = np.arange(0, len(grid))
         y_arr = np.arange(0, len(grid[0]))        
                 
-
 
         #use mask
         avg = 0.0
@@ -432,15 +460,25 @@ class Robot:
 
 #############Obstacle###########################
     def hug_obstacle(self, Current_Map):
-        dist = self.check_if_avoid_obstacle([obstacle.pos for obstacle in Current_Map.obstacles], Current_Map)
+        ##If it has a right robot, the dist should be sensor radius
+        #If it does not, the way it turns should be closer
+        
+        dist = (self.pos - self.is_obstacle).normalize()
+        
         new_vel = dist.rotate(90)
         self.vel = new_vel
         avg = 0
         for i in range(int(self.pos.x) - 1, int(self.pos.x) + 2):
             for j in range(int(self.pos.y)-1, int(self.pos.y) + 2):
                 avg += Current_Map.pheromone_grid[i][j]
-        if avg > 10:
-            self.is_obstacle = False
+        avg /= 16
+        if avg > 1:
+            self.vel = (self.pos - self.is_obstacle).normalize() * self.max_speed
+            # desired_angle = desired_vel - self.vel
+            # self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])  
+            self.is_obstacle = None
+            
+        
         self.pos += self.vel
    
    
@@ -456,21 +494,48 @@ class Robot:
         #Formation Movement
         self.leader_follower(Current_Map)
         
-        self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
 
-        self.vel += self.get_acceleration()
-        self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
+        # wall collision; right now it just bounces
+        if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
+            self.vel.x *= -1
+            self.acc_angle = math.pi - self.acc_angle
+            self.apply_speed()
+            return
+            
+
+        if self.pos.y < ROBOT_SIZE or self.pos.y > HEIGHT - ROBOT_SIZE:
+            self.vel.y *= -1
+            self.acc_angle *= -1
+            self.apply_speed()
+            return 
+        
+        self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
+        #self.apply_speed()
 
 
         #Pheromone
         self.move_counter += 1
+        self.drop_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
         if self.leader is None:
-            self.avoid_robots(Current_Map)
-            Current_Map.pheromone_grid = self.drop_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
+            self.avoid_robots(Current_Map)    
+            if self.move_counter > 100:
+                self.exploration_pheromone(Current_Map)
+                return
+            #     self.following_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)            # if self.move_counter > 100:
+
+        #self.check_if_avoid_obstacle([obstacle.pos for obstacle in Current_Map.obstacles], Current_Map)
+        
+        # if self.leader is None and self.is_obstacle:
+        #     self.hug_obstacle(Current_Map)
+        #     return
             
-            # if self.move_counter > 100:
-            #     self.following_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
+        self.apply_speed()
+        
+ 
             
+            
+            
+                 
         ''' For Grids
             grid_index, x, y = Current_Map.pheromone_grid_func(self)
             if grid_index != -1:
@@ -479,27 +544,9 @@ class Robot:
                 if self.move_counter > 100:
                     self.trailing_pheromone(Current_Map.pheromone_grid[grid_index],x,y)
                     self.pos += self.vel'''
+       
         
-            
-            
-        if self.check_if_avoid_obstacle([obstacle.pos for obstacle in Current_Map.obstacles], Current_Map):
-            self.hug_obstacle(Current_Map)
-            return
         
-        self.pos += self.vel
-
-
-        
-
-        # wall collision; right now it just bounces
-        if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
-            self.vel.x *= -1
-            self.acc_angle = math.pi - self.acc_angle
-
-        if self.pos.y < ROBOT_SIZE or self.pos.y > HEIGHT - ROBOT_SIZE:
-            self.vel.y *= -1
-            self.acc_angle *= -1
-            
             
     def avoid_obstacles(self, obstacles):
         for obstacle in obstacles:
@@ -512,10 +559,9 @@ class Robot:
     def check_if_avoid_obstacle(self, obstacles, Current_Map):   
         for obstacle in obstacles:
             dist = self.pos.distance_to(obstacle)
-            if dist < SENSOR_RADIUS+OBSTACLE_RADIUS and Current_Map.pheromone_grid[int(self.pos.x)][int(self.pos.y)] == 0:   
-                self.is_obstacle = True
-                return (self.pos - obstacle).normalize()
-        return None
+            if dist < SENSOR_RADIUS+OBSTACLE_RADIUS:   
+                self.is_obstacle = obstacle
+               
     
     
     #At this point, it is easier if they just repel from getting too close
