@@ -333,6 +333,7 @@ class Robot:
     ###################################################################                   
     
 ################# PHEROMONE ALGORITHM ###############################
+    #Not working well
     def drop_pheromone(self, grid , x_pos, y_pos):
         x = np.arange(0, len(grid))
         y = np.arange(0, len(grid[0]))
@@ -433,26 +434,28 @@ class Robot:
    
     def phero(self, screen):
         #Copy array 
+        
+        
         self.pheromone_grid_1 = pygame.surfarray.array2d(screen)
         #identify by alpha values
         #enumerate? #Get Values through
         #can I use the mask as a condition in the if statement and pick the closest white target
-        search_area = (x_arr[np.newaxis,:] - x)**2 + (y_arr[:,np.newaxis] - y)**2 < r**2
+        #search_area = (x_arr[np.newaxis,:] - x)**2 + (y_arr[:,np.newaxis] - y)**2 < r**2
         avg = 0
-        length = (WIDTH-1)
-        for i in range(0,length,3):
-            for j in range(0,length,3):
-                if search_area[i][j]:
-                    for x in range(i-1,i+2):
-                        for y in range(j-1, j+2):
-                            #Exclude transparencies that has 255
-                            new_screen = screen.convert_alpha()
-                            avg += screen.get_alpha()
-                    #Search for the minimm average alpha value in the 3x3 spacing
-                    #move to the minimum alpha value
+
+        # for i in range(int(self.pos.x - 2), int(self.pos.x + 3)):
+        #     for j in range(int(self.pos.y - 2), int(self.pos.y + 3)):
+
+        #The lower the number, the darker the color is
+        new_screen = pygame.surfarray.array_green(screen)
+                #avg += screen.get_alpha()
+                #Search for the minimm average alpha value in the 3x3 spacing
+                #move to the minimum alpha value
 
 
-        print(screen.get_at((10, 10)))
+        print(screen.get_at((400, 400)))
+        print(screen.get_at((420, 410)))
+        print(screen.get_at((450, 350)))
         #pygame.Surface.unlock(screen)
         a=1
         return
@@ -486,51 +489,53 @@ class Robot:
     
     
     def move(self,Current_Map):
-        # if self.leader is None:
-        #     self.avoid_robots(Current_Map)
-        #     grid_index, x, y = Current_Map.pheromone_grid_func(self)
-        #     Current_Map.pheromone_grid[grid_index] = self.drop_pheromone(Current_Map.pheromone_grid[grid_index],x,y)
 
+
+        #Pheromone
+        #self.move_counter += 1
+        # self.drop_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
+        # if self.leader is None:
+        #     #self.avoid_robots(Current_Map)    
+        #     if self.move_counter > 100:
+        #         self.exploration_pheromone(Current_Map)
+                
+            #     self.following_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)            # if self.move_counter > 100:
+
+        #if self.leader is None:
+            
+        
+        
         #Formation Movement
         self.leader_follower(Current_Map)
-        
 
-        # wall collision; right now it just bounces
+
+
+        
+              # wall collision; right now it just bounces
         if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
             self.vel.x *= -1
             self.acc_angle = math.pi - self.acc_angle
-            self.apply_speed()
-            return
+            # self.apply_speed()
+            # return
             
 
         if self.pos.y < ROBOT_SIZE or self.pos.y > HEIGHT - ROBOT_SIZE:
             self.vel.y *= -1
             self.acc_angle *= -1
-            self.apply_speed()
-            return 
-        
+            # self.apply_speed()
+            # return 
+      
         self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
-        #self.apply_speed()
-
-
-        #Pheromone
-        self.move_counter += 1
-        self.drop_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
-        if self.leader is None:
-            self.avoid_robots(Current_Map)    
-            if self.move_counter > 100:
-                self.exploration_pheromone(Current_Map)
-                return
-            #     self.following_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)            # if self.move_counter > 100:
-
+        self.vel += self.get_acceleration()
+        self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
+        self.apply_speed()
+      
+      
         #self.check_if_avoid_obstacle([obstacle.pos for obstacle in Current_Map.obstacles], Current_Map)
         
         # if self.leader is None and self.is_obstacle:
         #     self.hug_obstacle(Current_Map)
         #     return
-            
-        self.apply_speed()
-        
  
             
             
