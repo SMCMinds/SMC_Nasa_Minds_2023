@@ -9,8 +9,8 @@ from S_pheromone_class import Pheromone_Signaling
 class Robot:
 
     def __init__(self):
-        self.pos = pygame.Vector2(random.uniform(ROBOT_SIZE, WIDTH-ROBOT_SIZE), 
-                                  random.uniform(ROBOT_SIZE, HEIGHT-ROBOT_SIZE))
+        self.pos = pygame.Vector2(random.uniform(WIDTH/2 - ROBOT_SIZE, WIDTH/2 + ROBOT_SIZE), 
+                                  random.uniform(HEIGHT/2 -  ROBOT_SIZE, HEIGHT/2-ROBOT_SIZE))
         self.grid=[int(self.pos.x),int(self.pos.y)]
         self.target_grid=[0,0]
         self.max_speed = MAX_SPEED
@@ -333,7 +333,8 @@ class Robot:
     ###################################################################                   
     
 ################# PHEROMONE ALGORITHM ###############################
-    #Not working well
+    #It is working
+    #Maybe gridify this
     def drop_pheromone(self, grid , x_pos, y_pos):
         x = np.arange(0, len(grid))
         y = np.arange(0, len(grid[0]))
@@ -343,6 +344,7 @@ class Robot:
         
         mask = (x[np.newaxis,:] - x_pos)**2 + (y[:,np.newaxis] - y_pos)**2 < r**2
         grid[mask] += 1
+
         return grid
     
     
@@ -364,9 +366,9 @@ class Robot:
 
         if Current_Map.pheromone_grid[int(self.pos.x)][int(self.pos.y)] > avg:
             
-            dist = self.pos.distance_to(pygame.Vector2(i,j))
+            dist = self.pos.distance_to(pygame.Vector2(max_x,max_y))
             if dist < SENSOR_RADIUS:
-                desired_vel = (self.pos - pygame.Vector2(i,j)).normalize() * self.max_speed
+                desired_vel = (self.pos - pygame.Vector2(max_x,max_y)).normalize() * self.max_speed
                 desired_angle = desired_vel - self.vel
                 self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])  
                 self.apply_speed()
@@ -495,14 +497,14 @@ class Robot:
         avoidance_weight = 0
 
         #Pheromone
-        self.move_counter += 1
+        # self.move_counter += 1
         self.drop_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
-        if self.leader is None:
-            #self.avoid_robots(Current_Map)    
-            if self.move_counter > 100:
-                #Remove the self.vel here and replace
-                self.exploration_pheromone(Current_Map)
-                phero_weight
+        # if self.leader is None:
+        #     #self.avoid_robots(Current_Map)    
+        #     if self.move_counter > 100:
+        #         #Remove the self.vel here and replace
+        #         self.exploration_pheromone(Current_Map)
+        #         phero_weight = 1
                 
                 #self.following_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)  # if self.move_counter > 100:
 
@@ -511,26 +513,32 @@ class Robot:
         
         
         #Formation Movement
-        self.leader_follower(Current_Map)
-
+        #self.leader_follower(Current_Map)
+        # if self.leader:
+        #     leader_weight = 2
 
 
         
               # wall collision; right now it just bounces
         if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
+            #avoid_vel = self.vel.x * -1
             self.vel.x *= -1
             self.acc_angle = math.pi - self.acc_angle
-            # self.apply_speed()
-            # return
+            #avoidance_weight = 5
+            self.apply_speed()
+            return
             
 
         if self.pos.y < ROBOT_SIZE or self.pos.y > HEIGHT - ROBOT_SIZE:
             self.vel.y *= -1
             self.acc_angle *= -1
-            # self.apply_speed()
-            # return 
-      
-        self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
+            avoidance_weight = 5
+            self.apply_speed()
+            return 
+        #total_vel = 
+        if self.leader is None:
+            self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
+
         self.vel += self.get_acceleration()
         self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
         self.apply_speed()

@@ -1,5 +1,6 @@
 import pygame
 import random
+import time
 
 from S_constants_globals import * 
 from S_robot_class import Robot
@@ -12,12 +13,22 @@ from S_user_interface import mouse_update,draw_UI
 #if multiple robots are at the same location, it toggales all of them on/off
 #if you want to fix this, just make it select a random robot from those that are in range of click around line 70
 #program seems to run a bit slower, but "ultra" option is still really fast
+def screen_shot(screen):
+    time_taken = time.asctime(time.localtime(time.time()))
+    time_taken = time_taken.replace(" ", "_")
+    time_taken = time_taken.replace(":", ".")
+    save_file = 'screenshots/' + time_taken + '.png'
+    rect = pygame.Rect((0,0), (HEIGHT, WIDTH))
+    sub = screen.subsurface(rect)
+    pygame.image.save(sub, save_file)
+
 
 
 def main():
     #ini_map()
     #Main game loop
     running = True
+    times = 0
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     screen.fill(TRANSPARENT)
 
@@ -33,7 +44,6 @@ def main():
         # Handle events
         frame+=1
         
-
         for event in pygame.event.get():
             #get mouse input
             mouse_command=mouse_update(event)
@@ -58,8 +68,8 @@ def main():
                     FPS=60
                 ultra=not ultra
             
-            if mouse_command == "pheromone":
-                paused=not paused
+            # if mouse_command == "pheromone":
+            #     paused=not paused
 
 
             if (event.type == pygame.MOUSEBUTTONUP and event.button == 1):
@@ -71,8 +81,14 @@ def main():
                         robot.show_trail= not robot.show_trail
             
             if event.type == pygame.QUIT:
-                print(f' {Current_Map.area()}% of the map has been covered')
+                #print(f' {Current_Map.area()}% of the map has been covered')
+                #screen_shot(screen)
                 running = False
+        if times > 999:
+            screen_shot(screen)
+            print(Current_Map.area())
+            running = False
+        times+=1
 
         # Update robots
         if not paused:
@@ -118,8 +134,9 @@ def main():
 # Code here will only be executed when the file is run as the main program,
 if __name__ == "__main__":
     # Initialize Pygame
-    pygame.init() 
-    main()
-
+    pygame.init()
+    for i in range(10): 
+        main()
+        
 
 

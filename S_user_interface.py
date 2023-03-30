@@ -1,6 +1,6 @@
 import pygame
 from S_constants_globals import * 
-
+from math import *
 
 
 def mouse_update(event):
@@ -124,8 +124,25 @@ def draw_UI(screen,Current_Map, FPS, real_FPS,paused,ultra):
     text = font.render("Ultra " , True, (0, 0, 0))
     screen.blit(text, (WIDTH+75, 73))
 
-    text = font.render("pheromone " , True, (0, 0, 0))
-    screen.blit(text, (WIDTH+75, 115))
+    #Area calculator
+    
+    def area(Current_Map):
+        a = 0
+        for i in Current_Map.pheromone_grid:
+            for j in i:
+                if j > 0:
+                    a += 1
+                        
+        #Area of obstacles
+        obstacle_area = 0
+        for obstacle in Current_Map.obstacles:
+            obstacle_area = 2*pi* OBSTACLE_RADIUS**2
+        total_board = (WIDTH * HEIGHT) - obstacle_area
+        return a/total_board * 100
+
+
+    text = font.render("Area Covered: " + str(round(area(Current_Map),2)) + '%', True, (0, 0, 0))
+    screen.blit(text, (WIDTH-250, 40))
 
     #Robot Roles
     signaling_robots=0
