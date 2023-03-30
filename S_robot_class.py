@@ -9,8 +9,8 @@ from S_pheromone_class import Pheromone_Signaling
 class Robot:
 
     def __init__(self):
-        self.pos = pygame.Vector2(random.uniform(WIDTH/2+ROBOT_SIZE, WIDTH/2-ROBOT_SIZE), 
-                                  random.uniform(HEIGHT/2+ROBOT_SIZE, HEIGHT/2-ROBOT_SIZE))
+        self.pos = pygame.Vector2(random.uniform(ROBOT_SIZE, WIDTH-ROBOT_SIZE), 
+                                  random.uniform(ROBOT_SIZE, HEIGHT-ROBOT_SIZE))
         self.grid=[int(self.pos.x),int(self.pos.y)]
         self.target_grid=[0,0]
         self.max_speed = MAX_SPEED
@@ -484,22 +484,27 @@ class Robot:
         
         self.pos += self.vel
    
-   
+################################################ 
    
     
     
     def move(self,Current_Map):
-
+        #Weights
+        phero_weight = 0
+        leader_weight = 0
+        avoidance_weight = 0
 
         #Pheromone
-        #self.move_counter += 1
-        # self.drop_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
-        # if self.leader is None:
-        #     #self.avoid_robots(Current_Map)    
-        #     if self.move_counter > 100:
-        #         self.exploration_pheromone(Current_Map)
+        self.move_counter += 1
+        self.drop_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
+        if self.leader is None:
+            #self.avoid_robots(Current_Map)    
+            if self.move_counter > 100:
+                #Remove the self.vel here and replace
+                self.exploration_pheromone(Current_Map)
+                phero_weight
                 
-            #     self.following_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)            # if self.move_counter > 100:
+                #self.following_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)  # if self.move_counter > 100:
 
         #if self.leader is None:
             

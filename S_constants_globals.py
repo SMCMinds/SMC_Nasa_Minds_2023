@@ -23,7 +23,7 @@ BUTTON_SIZE=40
 
 # Define Globals
 FPS = 60
-NUM_ROBOTS = 10
+NUM_ROBOTS = 20
 NUM_OBSTACLES = 5   #Original 5
 NUM_TARGETS = 0    #Original 3
 ROBOT_SIZE = 5

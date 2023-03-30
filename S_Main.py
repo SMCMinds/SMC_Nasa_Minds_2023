@@ -84,7 +84,7 @@ def main():
                 
                 pygame.draw.circle(robot.trail, TRANSPARENT_GREEN, (robot.pos.x, robot.pos.y), SENSOR_RADIUS/2)
 
-                robot.phero(screen)
+                #robot.phero(screen)
                 
                 
 
@@ -92,7 +92,7 @@ def main():
 
         if frame>=FPS/60:
             frame=0
-            pygame.draw.rect(screen,TRANSPARENT,(0,0,WIDTH, SCREEN_HEIGHT))
+            pygame.draw.rect(screen,WHITE,(0,0,WIDTH, SCREEN_HEIGHT))
             draw_map(screen, Current_Map)
 
             #TRAILS HERE
