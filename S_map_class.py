@@ -50,7 +50,7 @@ class General_Map:
        
         self.pheromone_foraging = [[0.1 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
         
-        self.pheromone_grid = np.zeros((WIDTH+10,HEIGHT+10))
+        self.pheromone_grid = np.zeros((WIDTH,HEIGHT))
         self.pheromone_grid_1 = None
         # for i in range(9):
         #     self.pheromone_grid.append(np.zeros((int(WIDTH/3), int(HEIGHT/3))))
@@ -116,19 +116,33 @@ class General_Map:
             sensor_height_low = self.pos.y - SENSOR_RADIUS
         '''
 
+    # def area(self):
+    #     a = 0
+    #     for i in self.pheromone_grid:
+    #         for j in i:
+    #             if j > 0:
+    #                 a += 1
+                        
+    #     #Area of obstacles
+    #     obstacle_area = 0
+    #     for obstacle in self.obstacles:
+    #         obstacle_area = 2*pi* OBSTACLE_RADIUS**2
+    #     total_board = (WIDTH * HEIGHT) - obstacle_area
+    #     return a/total_board * 100
+    
     def area(self):
         a = 0
-        for i in self.pheromone_grid:
+        for i in self.pheromone_grid_1:
             for j in i:
-                if j > 0:
-                    a += 1
-                        
-        #Area of obstacles
+                if j != 255:
+                    a+=1
+                    
         obstacle_area = 0
         for obstacle in self.obstacles:
             obstacle_area = 2*pi* OBSTACLE_RADIUS**2
         total_board = (WIDTH * HEIGHT) - obstacle_area
         return a/total_board * 100
+
 
 
 # Display robots obstacles and Target

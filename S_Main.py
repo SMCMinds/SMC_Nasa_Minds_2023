@@ -18,12 +18,10 @@ def screen_shot(screen, Current_Map):
     text = font.render("Area Covered: " + str(round(Current_Map.area(),2)) + '%', True, (0, 0, 0))
     screen.blit(text, (WIDTH-250, 40))
     
-    
-    
     time_taken = time.asctime(time.localtime(time.time()))
     time_taken = time_taken.replace(" ", "_")
     time_taken = time_taken.replace(":", ".")
-    save_file = 'screenshots/hugging/' + time_taken + '.png'
+    save_file = 'screenshots/Phero_with_hugging/' + time_taken + '.png'
     rect = pygame.Rect((0,0), (HEIGHT, WIDTH))
     sub = screen.subsurface(rect)
     pygame.image.save(sub, save_file)
@@ -88,9 +86,10 @@ def main():
             
             if event.type == pygame.QUIT:
                 #print(f' {Current_Map.area()}% of the map has been covered')
-                #screen_shot(screen)
+                screen_shot(screen, Current_Map)
+                
                 running = False
-        if times > 999:
+        if times > 1500:
             screen_shot(screen, Current_Map)
             print(Current_Map.area())
             running = False
@@ -101,12 +100,12 @@ def main():
             for robot in Current_Map.robots:
                 #TRAILS HERE
                 start_pos= (robot.pos.x, robot.pos.y)
+                robot.phero(screen, Current_Map)
                 robot.update(Current_Map)
                 #pygame.draw.line(robot.trail, RED, start_pos, (robot.pos.x, robot.pos.y), 1)
                 
                 pygame.draw.circle(robot.trail, TRANSPARENT_GREEN, (robot.pos.x, robot.pos.y), SENSOR_RADIUS/2)
 
-                #robot.phero(screen)
                 
                 
 
