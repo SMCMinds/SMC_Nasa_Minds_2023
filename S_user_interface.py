@@ -126,23 +126,23 @@ def draw_UI(screen,Current_Map, FPS, real_FPS,paused,ultra):
 
     #Area calculator
     
-    def area(Current_Map):
-        a = 0
-        for i in Current_Map.pheromone_grid:
-            for j in i:
-                if j > 0:
-                    a += 1
+    # def area(Current_Map):
+    #     a = 0
+    #     for i in Current_Map.pheromone_grid:
+    #         for j in i:
+    #             if j > 0:
+    #                 a += 1
                         
-        #Area of obstacles
-        obstacle_area = 0
-        for obstacle in Current_Map.obstacles:
-            obstacle_area = 2*pi* OBSTACLE_RADIUS**2
-        total_board = (WIDTH * HEIGHT) - obstacle_area
-        return a/total_board * 100
+    #     #Area of obstacles
+    #     obstacle_area = 0
+    #     for obstacle in Current_Map.obstacles:
+    #         obstacle_area = 2*pi* OBSTACLE_RADIUS**2
+    #     total_board = (WIDTH * HEIGHT) - obstacle_area
+    #     return a/total_board * 100
 
 
-    text = font.render("Area Covered: " + str(round(area(Current_Map),2)) + '%', True, (0, 0, 0))
-    screen.blit(text, (WIDTH-250, 40))
+    # text = font.render("Area Covered: " + str(round(area(Current_Map),2)) + '%', True, (0, 0, 0))
+    # screen.blit(text, (WIDTH-250, 40))
 
     #Robot Roles
     signaling_robots=0

@@ -336,6 +336,8 @@ class Robot:
     #It is working
     #Maybe gridify this
     def drop_pheromone(self, grid , x_pos, y_pos):
+
+            
         x = np.arange(0, len(grid))
         y = np.arange(0, len(grid[0]))
         # numpy_grid = np.array(grid)
@@ -471,14 +473,16 @@ class Robot:
         dist = (self.pos - self.is_obstacle).normalize()
         
         new_vel = dist.rotate(90)
-        self.vel = new_vel
+        self.vel = new_vel * self.max_speed
         avg = 0
         for i in range(int(self.pos.x) - 1, int(self.pos.x) + 2):
             for j in range(int(self.pos.y)-1, int(self.pos.y) + 2):
+                if i > WIDTH or j > HEIGHT:
+                    continue
                 avg += Current_Map.pheromone_grid[i][j]
         avg /= 16
-        if avg > 1:
-            self.vel = (self.pos - self.is_obstacle).normalize() * self.max_speed
+        if avg > 3:
+            #self.vel = (self.pos - self.is_obstacle).normalize() * self.max_speed
             # desired_angle = desired_vel - self.vel
             # self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])  
             self.is_obstacle = None
@@ -508,15 +512,25 @@ class Robot:
                 
                 #self.following_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)  # if self.move_counter > 100:
 
-        #if self.leader is None:
-            
-        
+   
+        #self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
+
+   
+
+   
         
         #Formation Movement
-        #self.leader_follower(Current_Map)
+        self.leader_follower(Current_Map)
         # if self.leader:
         #     leader_weight = 2
 
+     
+        self.check_if_avoid_obstacle([obstacle.pos for obstacle in Current_Map.obstacles], Current_Map)
+
+        if self.leader is None and self.is_obstacle:
+            self.hug_obstacle(Current_Map)
+            return
+            
 
         
               # wall collision; right now it just bounces
@@ -536,19 +550,17 @@ class Robot:
             self.apply_speed()
             return 
         #total_vel = 
-        if self.leader is None:
-            self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
+        # if self.leader is None:
+        #     self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
+
 
         self.vel += self.get_acceleration()
         self.vel = self.vel.normalize() * min(self.vel.magnitude(), self.max_speed)
         self.apply_speed()
       
       
-        #self.check_if_avoid_obstacle([obstacle.pos for obstacle in Current_Map.obstacles], Current_Map)
         
-        # if self.leader is None and self.is_obstacle:
-        #     self.hug_obstacle(Current_Map)
-        #     return
+
  
             
             
