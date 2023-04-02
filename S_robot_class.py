@@ -189,26 +189,25 @@ class Robot:
                 #check if robot in list is in front of self and it has no one following
                 
                 #FOR STRUCTURES UP TO 3
-                if robot != self and self.is_behind(robot) and not self.left_occupied and not self.right_occupied and not robot.leader:
+                # if robot != self and self.is_behind(robot) and not self.left_occupied and not self.right_occupied and not robot.leader:
                     
-                #     #A left or right decision is created 
-                    left_or_right = self.wing_pos(robot)
+                # #     #A left or right decision is created 
+                #     left_or_right = self.wing_pos(robot)
 
-                    #Leader has not recognized self as follower yet since it needs
-                    #to go to the last child of the formation                    
-                    self.leader = robot
-                    if left_or_right == RIGHT and not self.leader.right_occupied:
-                        self.leader.right_occupied = self
-                    elif left_or_right == LEFT and not self.leader.left_occupied:
-                        self.leader.left_occupied = self
-                    else:
-                        self.leader = None
-                    return
+                #     #Leader has not recognized self as follower yet since it needs
+                #     #to go to the last child of the formation                    
+                #     self.leader = robot
+                #     if left_or_right == RIGHT and not self.leader.right_occupied:
+                #         self.leader.right_occupied = self
+                #     elif left_or_right == LEFT and not self.leader.left_occupied:
+                #         self.leader.left_occupied = self
+                #     else:
+                #         self.leader = None
+                #     return
                     
                 ###FOR STRUCTURES GREATER THAN 3####
-                #They somehow become recognize themselves as each others children
                 
-                '''if robot != self and self.is_behind(robot):
+                if robot != self and self.is_behind(robot):
     
                     #A left or right decision is created 
                     left_or_right = self.wing_pos(robot)
@@ -251,7 +250,7 @@ class Robot:
                         if self.leader.left_occupied:
                             return
                         self.leader.left_occupied = self
-                    return'''
+                    return
                                                
                               
  
@@ -305,39 +304,64 @@ class Robot:
         max_y = 0
         avg = 0.0
         # a = Current_Map.pheromone_grid_1[int(self.pos.x)][int(self.pos.x)]
-        if Current_Map.pheromone_grid_1[int(self.pos.x)][int(self.pos.x)] == 255:
-            return
-        angle = np.arctan2(self.vel.y,self.vel.x)
-        for i in range(int(self.pos.x - 10*math.cos(angle)), int(self.pos.x + 10* math.sin(angle))):
-            for j in range(int(self.pos.y + 10*math.cos(angle)), int(self.pos.y+ 10* math.sin(angle))):
-                avg +=(255- Current_Map.pheromone_grid_1[i][j])
-                if Current_Map.pheromone_grid_1[i][j] > max:
-                    max = Current_Map.pheromone_grid_1[i][j]
-                    max_x = i
-                    max_y = j
-                    
-        avg /= 25
-        
-        if avg>40:
+        newpos = self.pos + self.vel
+        anti_loop = 0
+        while 10 < Current_Map.pheromone_grid[int(newpos.x)][int(newpos.y)]:
+            self.vel = self.vel.rotate(30)
+            self.acc_angle = np.arctan2(self.vel.y, self.vel.x)
+            newpos = self.pos + self.vel
+            anti_loop += 1
+            if anti_loop > 12:
+                break
             
-            # if avg > 200:
-            #     return            
+        '''    
+            # angle = np.arctan2(self.vel.y,self.vel.x)
 
-            dist = self.pos.distance_to(pygame.Vector2(max_x,max_y))
-            if dist < SENSOR_RADIUS:
-                dist = pygame.Vector2(max_x,max_y) - self.pos 
-                if np.arctan2(dist[1],dist[0]) > np.arctan2(self.vel.y, self.vel.y):
-                    self.vel = self.vel.rotate(360-45)
-                    self.acc_angle -= math.pi/4
-                else:
-                    self.vel = self.vel.rotate(45)
-                    self.acc_angle += math.pi/4
+            # a = int(self.pos.x - abs(10*math.cos(angle)))
+            # b = int(self.pos.x + abs(10* math.cos(angle)))
+            # if int(self.pos.x - abs(10*math.cos(angle))) < 0:
+            #     a = 0
+            # if int(self.pos.x + abs(10*math.cos(angle))) > WIDTH:
+            #     b = WIDTH - 1
+        
+            # c = int(self.pos.y - abs(10*math.sin(angle)))
+            # d = int(self.pos.y + abs(10*math.sin(angle)))
+        
+            # if int(self.pos.y - abs(10*math.sin(angle))) < 0:
+            #     c = 0
+            # if int(self.pos.y + abs(10*math.sin(angle))) > HEIGHT:
+            #     d = WIDTH
+            
+            # for i in range(a, b):
+            #     for j in range(c, d):
+            #         avg +=(255 - Current_Map.pheromone_grid_1[i][j])
+            #         if Current_Map.pheromone_grid_1[i][j] < max:
+            #             max = Current_Map.pheromone_grid_1[i][j]
+            #             max_x = i
+            #             max_y = j
+                        
+            # avg /= 25
+            
+            # if avg>20:
                 
-                                 
-                # desired_angle = desired_vel - self.vel
-                # self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])  
-            # self.vel.x *= -1
-            # self.acc_angle = math.pi - self.acc_angle
+            #     # if avg > 200:
+            #     #     return            
+
+            #     #dist = self.pos.distance_to(pygame.Vector2(max_x,max_y))
+            #     # if dist < SENSOR_RADIUS:
+            #     dist = pygame.Vector2(max_x,max_y) - self.pos 
+            #     if np.arctan2(dist[1],dist[0]) > np.arctan2(self.vel.y, self.vel.y):
+            #         self.vel = self.vel.rotate(360-45)
+            #         self.acc_angle -= math.pi/4
+            #     else:
+            #         self.vel = self.vel.rotate(45)
+            #         self.acc_angle += math.pi/4
+                    
+                                    
+            #         # desired_angle = desired_vel - self.vel
+            #         # self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])  
+            #     # self.vel.x *= -1
+            #     # self.acc_angle = math.pi - self.acc_angle'''
             
             
             
@@ -422,21 +446,32 @@ class Robot:
         ##If it has a right robot, the dist should be sensor radius
         #If it does not, the way it turns should be closer
         avg = 0
-        
-        for i in range(int(self.pos.x) - 2, int(self.pos.x) + 3):
-            for j in range(int(self.pos.y)-2, int(self.pos.y) + 3):
+        a = int(self.pos.x - 2)
+        b = int(self.pos.x + 3)
+        if a < 0:
+            a = 0
+        if b > WIDTH:
+            b = WIDTH - 1
+       
+        c = int(self.pos.y - 2)
+        d = int(self.pos.y + 3)
+       
+        if c < 0:
+            c = 0
+        if d > HEIGHT:
+            d = HEIGHT - 1
+        for i in range(a, b):
+            for j in range(c, d):
                 if i > WIDTH or j > HEIGHT:
                     continue
-                avg += (255 - Current_Map.pheromone_grid_1[i][j])
+                avg += (255 - Current_Map.pheromone_grid[i][j])
         avg /= 25
             
             
         dist = (self.pos - self.is_obstacle).normalize()
         
-        if avg > 3:
-            #self.vel = (self.pos - self.is_obstacle).normalize() * self.max_speed
-            # desired_angle = desired_vel - self.vel
-            # self.acc_angle = np.arctan2(desired_angle[1], desired_angle[0])  
+        if avg > 2:
+
             self.is_obstacle = None
         new_vel = dist.rotate(90)
         self.vel = new_vel * self.max_speed
@@ -452,18 +487,18 @@ class Robot:
         leader_weight = 0
         avoidance_weight = 0
 
-
-        #self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
+        #Avoid Obstacles
+        self.avoid_obstacles([obstacle.pos for obstacle in Current_Map.obstacles])
      
-        self.check_if_avoid_obstacle([obstacle.pos for obstacle in Current_Map.obstacles],Current_Map)
+        # self.check_if_avoid_obstacle([obstacle.pos for obstacle in Current_Map.obstacles], Current_Map)
 
-        if self.leader is None and self.is_obstacle:
-            self.hug_obstacle(Current_Map)
-            return
+        # if self.leader is None and self.is_obstacle:
+        #     self.hug_obstacle(Current_Map)
+        #     return
             
 
         
-              # wall collision; right now it just bounces
+        # wall collision; right now it just bounces
         if self.pos.x < ROBOT_SIZE or self.pos.x > WIDTH - ROBOT_SIZE:
             if self.pos.x < 0:
                 self.pos.x = 10 
@@ -481,8 +516,6 @@ class Robot:
             return
             #avoidance_weight = 5
             
-            
-
         if self.pos.y < ROBOT_SIZE or self.pos.y > HEIGHT - ROBOT_SIZE:
             if self.pos.y < 0:
                 self.pos.y = 10 
@@ -498,22 +531,21 @@ class Robot:
             self.apply_speed()
             return
       
+        # #Formation Movement
+        self.leader_follower(Current_Map)
 
         #Pheromone
-        
-        self.move_counter += 1
-        #self.drop_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
+        # self.move_counter += 1
+        self.drop_pheromone(Current_Map.pheromone_grid,self.pos.x,self.pos.y)
         # if self.leader is None:
-            #self.avoid_robots(Current_Map)    
-        if self.move_counter > 5:
-            #Remove the self.vel here and replace
-            self.exploration_pheromone(Current_Map)
-            self.move_counter = 0
+        #     #self.avoid_robots(Current_Map)    
+        #     if self.move_counter > 10:
+        #         #Remove the self.vel here and replace
+        #         self.exploration_pheromone(Current_Map)
+        #         self.move_counter = 0
         
-        #Formation Movement
-        # self.leader_follower(Current_Map)
 
-
+        #self.pos += self.vel
         self.apply_speed()
 
  

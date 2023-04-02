@@ -116,32 +116,32 @@ class General_Map:
             sensor_height_low = self.pos.y - SENSOR_RADIUS
         '''
 
-    # def area(self):
-    #     a = 0
-    #     for i in self.pheromone_grid:
-    #         for j in i:
-    #             if j > 0:
-    #                 a += 1
-                        
-    #     #Area of obstacles
-    #     obstacle_area = 0
-    #     for obstacle in self.obstacles:
-    #         obstacle_area = 2*pi* OBSTACLE_RADIUS**2
-    #     total_board = (WIDTH * HEIGHT) - obstacle_area
-    #     return a/total_board * 100
-    
     def area(self):
         a = 0
-        for i in self.pheromone_grid_1:
+        for i in self.pheromone_grid:
             for j in i:
-                if j != 255:
-                    a+=1
-                    
+                if j > 0:
+                    a += 1
+                        
+        #Area of obstacles
         obstacle_area = 0
         for obstacle in self.obstacles:
             obstacle_area = 2*pi* OBSTACLE_RADIUS**2
         total_board = (WIDTH * HEIGHT) - obstacle_area
         return a/total_board * 100
+    
+    # def area(self):
+    #     a = 0
+    #     for i in self.pheromone_grid_1:
+    #         for j in i:
+    #             if j != 255:
+    #                 a+=1
+                    
+    #     obstacle_area = 0
+    #     for obstacle in self.obstacles:
+    #         obstacle_area += 2*pi* OBSTACLE_RADIUS**2
+    #     total_board = (WIDTH * HEIGHT) - obstacle_area
+    #     return a/total_board * 100
 
 
 

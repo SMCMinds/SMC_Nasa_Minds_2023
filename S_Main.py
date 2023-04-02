@@ -14,14 +14,14 @@ from S_user_interface import mouse_update,draw_UI
 #if you want to fix this, just make it select a random robot from those that are in range of click around line 70
 #program seems to run a bit slower, but "ultra" option is still really fast
 def screen_shot(screen, Current_Map):
-    font = pygame.font.SysFont(None, 30)
-    text = font.render("Area Covered: " + str(round(Current_Map.area(),2)) + '%', True, (0, 0, 0))
-    screen.blit(text, (WIDTH-250, 40))
-    
+  
+    for obstacle in Current_Map.obstacles:
+        pygame.draw.circle(screen, GRAY, (int(obstacle.pos.x), int(obstacle.pos.y)), OBSTACLE_RADIUS)
+  
     time_taken = time.asctime(time.localtime(time.time()))
     time_taken = time_taken.replace(" ", "_")
     time_taken = time_taken.replace(":", ".")
-    save_file = 'screenshots/Phero_with_hugging/' + time_taken + '.png'
+    save_file = 'screenshots/' + time_taken + '.png'
     rect = pygame.Rect((0,0), (HEIGHT, WIDTH))
     sub = screen.subsurface(rect)
     pygame.image.save(sub, save_file)
@@ -89,7 +89,7 @@ def main():
                 screen_shot(screen, Current_Map)
                 
                 running = False
-        if times > 1500:
+        if times > 1000:
             screen_shot(screen, Current_Map)
             print(Current_Map.area())
             running = False
@@ -100,7 +100,7 @@ def main():
             for robot in Current_Map.robots:
                 #TRAILS HERE
                 start_pos= (robot.pos.x, robot.pos.y)
-                robot.phero(screen, Current_Map)
+                #robot.phero(screen, Current_Map)
                 robot.update(Current_Map)
                 #pygame.draw.line(robot.trail, RED, start_pos, (robot.pos.x, robot.pos.y), 1)
                 
